@@ -1,8 +1,10 @@
 import sqlite3
+import os
 
 DB_PATH = "data/cards.db"
 
 def get_connection():
+    os.makedirs("data", exist_ok=True)
     return sqlite3.connect(DB_PATH)
 
 def create_tables():
