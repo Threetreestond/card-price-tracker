@@ -1,4 +1,5 @@
 import requests
+import json
 
 SORCERY_CATEGORY_ID = 77
 
@@ -20,4 +21,4 @@ if __name__ == "__main__":
     print(f"Total cards fetched: {len(products)}")
     print()
     print("First card:")
-    print(products[0])
+    print(json.dumps(products[0], indent=2))
