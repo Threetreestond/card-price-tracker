@@ -18,7 +18,9 @@ def get_products(group_id):
 if __name__ == "__main__":
     ALPHA_GROUP_ID = 23335
     products = get_products(ALPHA_GROUP_ID)
-    print(f"Total cards fetched: {len(products)}")
-    print()
-    print("First card:")
-    print(json.dumps(products[0], indent=2))
+    
+    for card in products:
+        ext = {d["name"]: d["value"] for d in card["extendedData"]}
+        if ext.get("CardType") == "Minion":
+            print(json.dumps(card, indent=2))
+            break
