@@ -51,6 +51,23 @@ def create_tables():
         )
     """)
     
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS decks (
+            deck_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            created_at TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS deck_cards (
+            deck_id INTEGER,
+            product_id INTEGER,
+            quantity INTEGER DEFAULT 1,
+            PRIMARY KEY (deck_id, product_id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
