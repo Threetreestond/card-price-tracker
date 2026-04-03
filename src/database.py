@@ -143,6 +143,15 @@ def get_card_count():
 if __name__ == "__main__":
     create_tables()
     print(f"Cards in database: {get_card_count()}")
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT product_id, name, rarity, cost, threshold FROM cards LIMIT 5")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    for row in rows:
+        print(row)
 
 
 
