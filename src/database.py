@@ -178,10 +178,13 @@ if __name__ == "__main__":
     cursor = conn.cursor()
     cursor.execute("SELECT product_id, name, rarity, cost, threshold FROM cards LIMIT 5")
     rows = cursor.fetchall()
+    cursor.execute("SELECT COUNT(*) FROM prices")
+    price_rows = cursor.fetchone()[0]
     conn.close()
     
     for row in rows:
         print(row)
+    print(price_rows)
 
 
 
