@@ -132,8 +132,13 @@ def save_cards(card):
     conn.commit()
     conn.close()
 
-
-
+def get_card_count():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM cards")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
 
 if __name__ == "__main__":
     create_tables()
