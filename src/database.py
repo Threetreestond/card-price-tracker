@@ -52,6 +52,27 @@ def create_tables():
     conn.commit()
     conn.close()
 
+def save_cards(card):
+
+    ext = {d["name"]: d["value"] for d in card["extendedData"]}
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT OR IGNORE INTO cards (product_id, name, rarity)
+        VALUES (?, ?, ?)
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+
+
 if __name__ == "__main__":
     create_tables()
     print("Tables created successfully")
+
+
+

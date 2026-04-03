@@ -24,3 +24,4 @@ if __name__ == "__main__":
         if ext.get("CardType") == "Minion":
             print(json.dumps(card, indent=2))
             break
+            
