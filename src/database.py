@@ -225,6 +225,32 @@ def get_cards(group_id=None, card_type=None, element=None, cost=None, rarity=Non
     conn.close()
     return rows
 
+def get_prices(product_id=None, date_from=None, date_to=None):
+    query = "SELECT * FROM prices WHERE 1=1"
+    params = []
+    
+    if product_id is not None:
+        query += " AND product_id = ?"
+        params.append(product_id)
+    
+    if date_from:
+        query += " AND date_fetched >= ?"
+        params.append(date_from)
+    
+    if date_to:
+        query += " AND date_fetched <= ?"
+        params.append(date_to)
+
+    query+= " ORDER BY date_fetched ASC"
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, tuple(params))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
 if __name__ == "__main__":
     create_tables()
     # print(f"Cards in database: {get_card_count()}")
@@ -249,7 +275,12 @@ if __name__ == "__main__":
     # cards = get_cards(cost=0)
     # print(f"Found {len(cards)} cards")
 
-    cards = get_cards(foil=True)
-    print(f"Foil cards: {len(cards)}")
-    cards = get_cards(foil=False)
-    print(f"Non-foil cards: {len(cards)}")
+    # cards = get_cards(foil=True)
+    # print(f"Foil cards: {len(cards)}")
+    # cards = get_cards(foil=False)
+    # print(f"Non-foil cards: {len(cards)}")
+
+    prices = get_prices(product_id=521503)
+    print(f"Price rows for Accursed Albatross: {len(prices)}")
+    for price in prices:
+        print(price)
