@@ -23,5 +23,8 @@ def sync_prices():
 
 
 if __name__ == "__main__":
+    print("Syncing cards...")
     sync_cards()
-    print("Sync complete")
+    print("Syncing prices...")
+    sync_prices()
+    print("Done")
