@@ -52,6 +52,31 @@ def create_tables():
     conn.commit()
     conn.close()
 
+
+'''
+breakdown of which columns use extData
+product_id,
+group_id,
+category_id,
+name,
+clean_name,
+image_url,
+url,
+rarity, -extData "Rarity"
+description, -extData "Description"
+cost, -extData "Cost"
+threshold, -extData "Threshold"
+element, -extData "Element"
+type_line, -extData "Type Line"
+card_category, -extData "CardCategory"
+card_type, -extData "CardType"
+card_subtype, -extData "Card Subtype"
+power_rating, -extData "Power Rating"
+defense_power, -extData "Defense Power"
+life, -extData "Life"
+flavor_text -extData "Flavor Text"
+'''
+
 def save_cards(card):
 
     ext = {d["name"]: d["value"] for d in card["extendedData"]}
@@ -60,9 +85,49 @@ def save_cards(card):
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT OR IGNORE INTO cards (product_id, name, rarity)
-        VALUES (?, ?, ?)
-    """)
+        INSERT OR IGNORE INTO cards (
+            product_id,
+            group_id,
+            category_id,
+            name,
+            clean_name,
+            image_url,
+            url,
+            rarity,
+            description,
+            cost,
+            threshold,
+            element,
+            type_line,
+            card_category,
+            card_type,
+            card_subtype,
+            power_rating,
+            defense_power,
+            life,
+            flavor_text
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (card["productId"],
+            card["groupId"],
+            card["categoryId"],
+            card["name"],
+            card["cleanName"],
+            card["imageUrl"],
+            card["url"],
+            ext.get("Rarity"),
+            ext.get("Description"),
+            ext.get("Cost"),
+            ext.get("Threshold"),
+            ext.get("Element"),
+            ext.get("Type Line"),
+            ext.get("CardCategory"),
+            ext.get("CardType"),
+            ext.get("Card Subtype"),
+            ext.get("Power Rating"),
+            ext.get("Defense Power"),
+            ext.get("Life"),
+            ext.get("Flavor Text"),
+          ))
 
     conn.commit()
     conn.close()
