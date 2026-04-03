@@ -182,6 +182,27 @@ def save_prices(price):
     conn.commit()
     conn.close()
 
+def save_deck(deck):
+    today = str(date.today())
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT OR IGNORE INTO decks (
+            name,
+            created_at
+        ) VALUES (?, ?)
+    """, (  
+            deck.name,
+            today
+          ))
+
+    deck_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return deck_id
+
+
 def get_card_count():
     conn = get_connection()
     cursor = conn.cursor()
