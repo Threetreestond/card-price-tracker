@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import date
 
 DB_PATH = "data/cards.db"
 
@@ -107,7 +108,7 @@ def save_cards(card):
             life,
             flavor_text
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (card["productId"],
+    """, (  card["productId"],
             card["groupId"],
             card["categoryId"],
             card["name"],
@@ -132,6 +133,34 @@ def save_cards(card):
     conn.commit()
     conn.close()
 
+def save_prices(price):
+    today = str(date.today())  # gives "2026-04-03" formatting
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT OR IGNORE INTO prices (
+            product_id,
+            sub_type_name,
+            low_price,
+            mid_price,
+            high_price,
+            market_price,
+            date_fetched   
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    
+    """, (  price["productId"],
+            price["subTypeName"],
+            price["lowPrice"],
+            price["midPrice"],
+            price["highPrice"],
+            price["marketPrice"],
+            today,
+          ))
+    
+    conn.commit()
+    conn.close()
+
 def get_card_count():
     conn = get_connection()
     cursor = conn.cursor()
@@ -139,6 +168,7 @@ def get_card_count():
     count = cursor.fetchone()[0]
     conn.close()
     return count
+
 
 if __name__ == "__main__":
     create_tables()
