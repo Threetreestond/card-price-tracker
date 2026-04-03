@@ -142,7 +142,7 @@ def get_card_count():
 
 if __name__ == "__main__":
     create_tables()
-    print("Tables created successfully")
+    print(f"Cards in database: {get_card_count()}")
 
 
 
