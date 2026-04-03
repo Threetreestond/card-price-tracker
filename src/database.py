@@ -45,7 +45,7 @@ def create_tables():
             high_price REAL,
             market_price REAL,
             date_fetched TEXT,
-            PRIMARY KEY (product_id, sub_type_name)
+            PRIMARY KEY (product_id, sub_type_name, date_fetched)
         )
     """)
     
