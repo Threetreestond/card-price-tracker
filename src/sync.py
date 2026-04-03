@@ -12,3 +12,8 @@ def sync_cards():
         # save the products to the database
         for card in cards:
             save_cards(card)
+
+
+if __name__ == "__main__":
+    sync_cards()
+    print("Sync complete")
