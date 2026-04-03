@@ -1,5 +1,5 @@
-from fetcher import get_sorcery_groups, get_products
-from database import save_cards, create_tables
+from fetcher import get_sorcery_groups, get_products, get_prices
+from database import save_cards, create_tables, save_prices
 
 def sync_cards():
     # ensure tables exist before we try to write to them
@@ -12,6 +12,14 @@ def sync_cards():
         # save the products to the database
         for card in cards:
             save_cards(card)
+
+def sync_prices():
+    create_tables()
+    groups = get_sorcery_groups()
+    for group in groups:
+        prices = get_prices(group["groupId"])
+        for price in prices:
+            save_prices(price)
 
 
 if __name__ == "__main__":
