@@ -23,7 +23,7 @@ def create_tables():
             url TEXT,
             rarity TEXT,
             description TEXT,
-            cost INTEGER,
+            cost TEXT,
             threshold TEXT,
             element TEXT,
             type_line TEXT,
@@ -33,7 +33,8 @@ def create_tables():
             power_rating INTEGER,
             defense_power INTEGER,
             life INTEGER,
-            flavor_text TEXT
+            flavor_text TEXT,
+            foil INTEGER
         )
     """)
     
@@ -76,6 +77,7 @@ power_rating, -extData "Power Rating"
 defense_power, -extData "Defense Power"
 life, -extData "Life"
 flavor_text -extData "Flavor Text"
+foil - determined by name contains '(Foil)'
 '''
 
 def save_cards(card):
@@ -106,8 +108,9 @@ def save_cards(card):
             power_rating,
             defense_power,
             life,
-            flavor_text
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            flavor_text,
+            foil
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (  card["productId"],
             card["groupId"],
             card["categoryId"],
@@ -128,6 +131,7 @@ def save_cards(card):
             ext.get("Defense Power"),
             ext.get("Life"),
             ext.get("Flavor Text"),
+            '(Foil)' in card["name"]  # evaluates to True/False, stored as 1/0
           ))
 
     conn.commit()
@@ -170,21 +174,82 @@ def get_card_count():
     return count
 
 
-if __name__ == "__main__":
-    create_tables()
-    print(f"Cards in database: {get_card_count()}")
+def get_cards(group_id=None, card_type=None, element=None, cost=None, rarity=None, threshold=None, card_category=None, power_rating=None, defense_power=None, foil=None):
+    query = "SELECT * FROM cards WHERE card_type IS NOT NULL"
+    params = []
     
+    if group_id:
+        query += " AND group_id = ?"
+        params.append(group_id)
+    
+    if card_type:
+        query += " AND card_type = ?"
+        params.append(card_type)
+    
+    if element:
+        query += " AND element = ?"
+        params.append(element)
+
+    if cost is not None:
+        query += " AND cost = ?"
+        params.append(cost)
+    
+    if rarity:
+        query += " AND rarity = ?"
+        params.append(rarity)
+
+    if threshold:
+        query += " AND threshold = ?"
+        params.append(threshold)
+
+    if card_category:
+        query += " AND card_category = ?"
+        params.append(card_category)
+
+    if power_rating:
+        query += " AND power_rating = ?"
+        params.append(power_rating)
+
+    if defense_power:
+        query += " AND defense_power = ?"
+        params.append(defense_power)
+
+    if foil is not None:
+        query += " AND foil = ?"
+        params.append(1 if foil else 0)
+        
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT product_id, name, rarity, cost, threshold FROM cards LIMIT 5")
+    cursor.execute(query, tuple(params))
     rows = cursor.fetchall()
-    cursor.execute("SELECT COUNT(*) FROM prices")
-    price_rows = cursor.fetchone()[0]
     conn.close()
+    return rows
+
+if __name__ == "__main__":
+    create_tables()
+    # print(f"Cards in database: {get_card_count()}")
     
-    for row in rows:
-        print(row)
-    print(price_rows)
+    # conn = get_connection()
+    # cursor = conn.cursor()
+    # cursor.execute("SELECT product_id, name, rarity, cost, threshold FROM cards LIMIT 5")
+    # rows = cursor.fetchall()
+    # cursor.execute("SELECT COUNT(*) FROM prices")
+    # price_rows = cursor.fetchone()[0]
+    # conn.close()
+    
+    # for row in rows:
+    #     print(row)
+    # print(price_rows)
 
+    # cards = get_cards(group_id=23335, element="Water", card_type="Minion")
+    # print(f"Found {len(cards)} cards")
+    # for card in cards[:5]:
+    #     print(card)
 
+    # cards = get_cards(cost=0)
+    # print(f"Found {len(cards)} cards")
 
+    cards = get_cards(foil=True)
+    print(f"Foil cards: {len(cards)}")
+    cards = get_cards(foil=False)
+    print(f"Non-foil cards: {len(cards)}")
