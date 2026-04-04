@@ -6,24 +6,25 @@ class Deck:
         self.deck_id = deck_id
         self.cards = {}
     
-    def add_card(self, product_id, quantity=1):
+    def add_card(self, product_id, zone, quantity=1):
         if self.deck_id is None:
             self.save()
-
-        add_card_to_deck(self.deck_id, product_id, quantity)
-        if product_id in self.cards:
-            self.cards[product_id] += quantity
+        add_card_to_deck(self.deck_id, product_id, zone, quantity)
+        key = (product_id, zone)
+        if key in self.cards:
+            self.cards[key] += quantity
         else:
-            self.cards[product_id] = quantity
+            self.cards[key] = quantity
 
 
-    def remove_card(self, product_id):
+    def remove_card(self, product_id, zone):
         if self.deck_id is None:
             self.save()
         
-        remove_card_from_deck(self.deck_id, product_id)
-        if product_id in self.cards:
-            del self.cards[product_id]
+        remove_card_from_deck(self.deck_id, product_id, zone)
+        key = (product_id, zone)
+        if key in self.cards:
+            del self.cards[key]
     
     def save(self):
         if self.deck_id is None:
@@ -34,8 +35,8 @@ class Deck:
         if deck_info:
             self.name = deck_info['name']
         deck_cards = get_deck_cards(self.deck_id)
-        for product_id, quantity in deck_cards:
-            self.cards[product_id] = quantity
+        for product_id, quantity, zone in deck_cards:
+            self.cards[product_id, zone] = quantity
 
 
 if __name__ == "__main__":
@@ -44,9 +45,9 @@ if __name__ == "__main__":
     
     # create a new deck and add some cards
     deck = Deck(name="Test Water Deck")
-    deck.add_card(521503)  # Accursed Albatross
-    deck.add_card(521503)  # add another copy
-    deck.add_card(521514)  # Adept Illusionist
+    deck.add_card(521503, "MainDeck")  # Accursed Albatross
+    deck.add_card(521503, "Collection")  # add another copy
+    deck.add_card(521514, "MainDeck")  # Adept Illusionist
     
     print(f"Deck ID: {deck.deck_id}")
     print(f"Cards in memory: {deck.cards}")

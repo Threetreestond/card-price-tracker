@@ -28,6 +28,7 @@ def main():
     deck_parser.add_argument("--name", type=str, help="Deck name for create")
     deck_parser.add_argument("--id", type=int, help="Deck ID for show/add")
     deck_parser.add_argument("--card", type=int, help="Product ID to add")
+    deck_parser.add_argument("--zone", type=str, help="Card Zone Location to add to")
 
 
     # args parser
@@ -62,15 +63,17 @@ def main():
             deck = Deck(deck_id=args.id)
             deck.load()
             print(f"Deck '{deck.name} with ID: '{deck.deck_id}' contains the following '{len(deck.cards)}' cards")
-            card_lookup = {card['product_id']: card for card in get_cards_by_ids(list(deck.cards.keys()))}
-            for product_id, quantity in deck.cards.items():
+            card_lookup = {card['product_id']: card for card in get_cards_by_ids(
+                [pid for pid, zone in deck.cards.keys()]
+            )}
+            for (product_id, zone), quantity in deck.cards.items():
                 card = card_lookup[product_id]
-                print(f"{card['name']:<40} x{quantity}")
+                print(f"{card['name']:<40} {zone:<12} x{quantity}")
 
         elif args.action == "add":
             deck = Deck(deck_id=args.id)
             deck.load()
-            deck.add_card(product_id=args.card)
+            deck.add_card(product_id=args.card, zone=args.zone)
 
     else:
         parser.print_help()

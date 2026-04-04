@@ -66,7 +66,8 @@ def create_tables():
             deck_id INTEGER,
             product_id INTEGER,
             quantity INTEGER DEFAULT 1,
-            PRIMARY KEY (deck_id, product_id)
+            zone TEXT,
+            PRIMARY KEY (deck_id, product_id, zone)
         )
     """)
 
@@ -204,24 +205,24 @@ def save_deck(deck):
     conn.close()
     return deck_id
 
-def add_card_to_deck(deck_id, product_id, quantity=1):
+def add_card_to_deck(deck_id, product_id, zone, quantity=1):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO deck_cards (deck_id, product_id, quantity)
-        VALUES (?, ?, ?)
-        ON CONFLICT (deck_id, product_id)
+        INSERT INTO deck_cards (deck_id, product_id, zone, quantity)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (deck_id, product_id, zone)
         DO UPDATE SET quantity = quantity + ?
-    """, (deck_id, product_id, quantity, quantity))
+    """, (deck_id, product_id, zone, quantity, quantity))
     conn.commit()
     conn.close()
     
-def remove_card_from_deck(deck_id, product_id):
+def remove_card_from_deck(deck_id, product_id, zone):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ?
-    """, (deck_id, product_id))
+        DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?
+    """, (deck_id, product_id, zone))
     conn.commit()
     conn.close()
 
@@ -229,7 +230,7 @@ def get_deck_cards(deck_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT product_id, quantity FROM deck_cards WHERE deck_id = ?
+        SELECT product_id, quantity, zone FROM deck_cards WHERE deck_id = ?
     """, (deck_id,))
     rows = cursor.fetchall()
     conn.close()
