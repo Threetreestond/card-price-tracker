@@ -32,7 +32,6 @@ def get_products(group_id):
 def get_prices(group_id):
     """
     Fetches current market prices for all products in a given set.
-    One product can have multiple price rows (e.g. Normal vs Foil).
     TCGCSV updates prices daily at approximately 20:00 UTC.
     """
     url = f"https://tcgcsv.com/tcgplayer/{SORCERY_CATEGORY_ID}/{group_id}/prices"
