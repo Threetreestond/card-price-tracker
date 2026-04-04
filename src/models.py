@@ -1,4 +1,4 @@
-from database import save_deck, get_deck, add_card_to_deck, remove_card_from_deck
+from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards
 
 class Deck:
     def __init__(self, name, deck_id=None):
@@ -23,11 +23,13 @@ class Deck:
         
         remove_card_from_deck(self.deck_id, product_id)
         if product_id in self.cards:
-            self.cards[product_id] -= 1
+            del self.cards[product_id]
     
     def save(self):
         if self.deck_id is None:
             self.deck_id = save_deck(self)
     
     def load(self):
-        pass
+        deck_cards = get_deck_cards(self.deck_id)
+        for product_id, quantity in deck_cards:
+            self.cards[product_id] = quantity
