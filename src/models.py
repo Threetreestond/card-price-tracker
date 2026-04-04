@@ -33,3 +33,22 @@ class Deck:
         deck_cards = get_deck_cards(self.deck_id)
         for product_id, quantity in deck_cards:
             self.cards[product_id] = quantity
+
+
+if __name__ == "__main__":
+    from database import create_tables
+    create_tables()
+    
+    # create a new deck and add some cards
+    deck = Deck(name="Test Water Deck")
+    deck.add_card(521503)  # Accursed Albatross
+    deck.add_card(521503)  # add another copy
+    deck.add_card(521514)  # Adept Illusionist
+    
+    print(f"Deck ID: {deck.deck_id}")
+    print(f"Cards in memory: {deck.cards}")
+    
+    # reload from database
+    deck2 = Deck(name="Test Water Deck", deck_id=deck.deck_id)
+    deck2.load()
+    print(f"Cards after reload: {deck2.cards}")

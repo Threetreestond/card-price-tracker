@@ -202,6 +202,37 @@ def save_deck(deck):
     conn.close()
     return deck_id
 
+def add_card_to_deck(deck_id, product_id, quantity=1):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO deck_cards (deck_id, product_id, quantity)
+        VALUES (?, ?, ?)
+        ON CONFLICT (deck_id, product_id)
+        DO UPDATE SET quantity = quantity + ?
+    """, (deck_id, product_id, quantity, quantity))
+    conn.commit()
+    conn.close()
+    
+def remove_card_from_deck(deck_id, product_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ?
+    """, (deck_id, product_id))
+    conn.commit()
+    conn.close()
+
+def get_deck_cards(deck_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT product_id, quantity FROM deck_cards WHERE deck_id = ?
+    """, (deck_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
 
 def get_card_count():
     conn = get_connection()
