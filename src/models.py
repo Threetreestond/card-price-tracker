@@ -1,7 +1,7 @@
-from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards
+from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards, get_deck
 
 class Deck:
-    def __init__(self, name, deck_id=None):
+    def __init__(self, name=None, deck_id=None):
         self.name = name
         self.deck_id = deck_id
         self.cards = {}
@@ -30,6 +30,9 @@ class Deck:
             self.deck_id = save_deck(self)
     
     def load(self):
+        deck_info = get_deck(self.deck_id)
+        if deck_info:
+            self.name = deck_info['name']
         deck_cards = get_deck_cards(self.deck_id)
         for product_id, quantity in deck_cards:
             self.cards[product_id] = quantity

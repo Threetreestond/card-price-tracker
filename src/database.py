@@ -235,6 +235,14 @@ def get_deck_cards(deck_id):
     conn.close()
     return rows
 
+def get_deck(deck_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM decks WHERE deck_id = ?", (deck_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
 
 def get_card_count():
     conn = get_connection()
@@ -245,7 +253,7 @@ def get_card_count():
     return count
 
 
-def get_cards(group_id=None, card_type=None, element=None, cost=None, rarity=None, threshold=None, card_category=None, power_rating=None, defense_power=None, foil=None):
+def get_cards(group_id=None, card_type=None, element=None, cost=None, rarity=None, threshold=None, card_category=None, power_rating=None, defense_power=None, foil=None, product_id=None):
     query = "SELECT * FROM cards WHERE card_type IS NOT NULL"
     params = []
     
@@ -288,10 +296,24 @@ def get_cards(group_id=None, card_type=None, element=None, cost=None, rarity=Non
     if foil is not None:
         query += " AND foil = ?"
         params.append(1 if foil else 0)
+
+    if product_id is not None:
+        query+= " AND product_id = ?"
+        params.append(product_id)
         
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query, tuple(params))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def get_cards_by_ids(product_ids):
+    placeholders = ",".join("?" * len(product_ids))
+    query = f"SELECT * FROM cards WHERE product_id IN ({placeholders})"
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, tuple(product_ids))
     rows = cursor.fetchall()
     conn.close()
     return rows
