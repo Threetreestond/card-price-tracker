@@ -20,6 +20,20 @@ def get_deck_card_data(deck, zone=None):
     # return a list of (card, quantity) tuples
     return [(card_lookup[pid], qty) for pid, qty in valid_ids]
 
+def mana_curve(deck, zone="maindeck"):
+    deck_info = get_deck_card_data(deck, zone)
+    cost_counts = {str(i): 0 for i in range(11)}
+    for card, qty in deck_info:
+        if card['cost'] in cost_counts:
+            cost_counts[card['cost']] += qty
+    plt.bar(cost_counts.keys(), cost_counts.values())
+    plt.xlabel("Cost")
+    plt.ylabel("Quantity")
+    plt.title("Mana Cost")
+    plt.show()
+    return
+
+
 if __name__ == "__main__":
     from database import create_tables
     from models import Deck
@@ -31,4 +45,6 @@ if __name__ == "__main__":
     data = get_deck_card_data(deck, zone='maindeck')
     for card, quantity in data:
         print(f"{card['name']} x{quantity}")
+
+    mana_curve(deck)
 
