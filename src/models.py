@@ -9,6 +9,7 @@ class Deck:
     def add_card(self, product_id, quantity=1):
         if self.deck_id is None:
             self.save()
+
         add_card_to_deck(self.deck_id, product_id, quantity)
         if product_id in self.cards:
             self.cards[product_id] += quantity
@@ -17,7 +18,12 @@ class Deck:
 
 
     def remove_card(self, product_id):
-        pass
+        if self.deck_id is None:
+            self.save()
+        
+        remove_card_from_deck(self.deck_id, product_id)
+        if product_id in self.cards:
+            self.cards[product_id] -= 1
     
     def save(self):
         if self.deck_id is None:
