@@ -6,7 +6,9 @@ DB_PATH = "data/cards.db"
 
 def get_connection():
     os.makedirs("data", exist_ok=True)
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def create_tables():
     conn = get_connection()
