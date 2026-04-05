@@ -48,6 +48,20 @@ def element_distribution(deck, zone="maindeck"):
     plt.pie(data_show.values(), labels=data_show.keys())
     plt.show()
 
+def card_type_distribution(deck, zone=None):
+    deck_info = get_deck_card_data(deck, zone)
+    card_types_counter = {"Artifact" : 0, "Aura" : 0, "Site" : 0, "Magic" : 0, "Avatar" : 0, "Minion" : 0, "None": 0 }
+    for card, qty in deck_info:
+        if card['card_type'] is not None:
+            card_types = card['card_type'].split(";")
+            for card_type in card_types:
+                card_types_counter[card_type] += qty
+        else:
+            card_types_counter["None"] += qty
+    data_show = {e: qty for e, qty in card_types_counter.items() if qty > 0}
+    plt.pie(data_show.values(), labels=data_show.keys())
+    plt.show()
+
 
 if __name__ == "__main__":
     from database import create_tables
@@ -63,4 +77,4 @@ if __name__ == "__main__":
 
     mana_curve(deck)
     element_distribution(deck)
-
+    card_type_distribution(deck)
