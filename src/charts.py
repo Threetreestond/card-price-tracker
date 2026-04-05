@@ -34,6 +34,21 @@ def mana_curve(deck, zone="maindeck"):
     return
 
 
+def element_distribution(deck, zone="maindeck"):
+    deck_info = get_deck_card_data(deck, zone)
+    element_types = {"Fire" : 0, "Water" : 0, "Earth" : 0, "Air" : 0, "None" : 0 }
+    for card, qty in deck_info:
+        if card['element'] is not None:
+            card_elements = card['element'].split(";")
+            for element in card_elements:
+                element_types[element] += qty
+        else:
+            element_types["None"] += qty
+    data_show = {e: qty for e, qty in element_types.items() if qty > 0}
+    plt.pie(data_show.values(), labels=data_show.keys())
+    plt.show()
+
+
 if __name__ == "__main__":
     from database import create_tables
     from models import Deck
@@ -47,4 +62,5 @@ if __name__ == "__main__":
         print(f"{card['name']} x{quantity}")
 
     mana_curve(deck)
+    element_distribution(deck)
 
