@@ -1,4 +1,4 @@
-from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards, get_deck
+from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards, get_deck, delete_deck
 
 
 class Deck:
@@ -81,6 +81,9 @@ class Deck:
         deck_cards = get_deck_cards(self.deck_id)
         for product_id, quantity, zone in deck_cards:
             self.cards[(product_id, zone)] = quantity
+
+    def delete(self):
+        delete_deck(self.deck_id)
 
 
 if __name__ == "__main__":

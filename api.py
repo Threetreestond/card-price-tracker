@@ -18,6 +18,8 @@ class DeckCreate(BaseModel):
 def root():
     return {"message": "hello"}
 
+#LANDING PAGE
+
 @app.get("/decks")
 def get_decks():
     return get_all_decks()
@@ -29,3 +31,9 @@ def create_deck(deck: DeckCreate):
     new_deck.save()
 # plain dict — FastAPI converts this to JSON automatically
     return {"deck_id": new_deck.deck_id, "name": new_deck.name}
+
+@app.delete("/decks/{deck_id}")
+def delete_deck(deck_id):
+    deck = Deck(deck_id=deck_id)
+    deck.delete()
+    return {"message": "Deck deleted"}

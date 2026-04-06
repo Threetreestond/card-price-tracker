@@ -26,7 +26,7 @@ def mana_curve(deck, zone="maindeck"):
     for card, qty in deck_info:
         if card['cost'] in cost_counts:
             cost_counts[card['cost']] += qty
-    plt.bar(cost_counts.keys(), cost_counts.values())
+    plt.bar(list(cost_counts.keys()), list(cost_counts.values()))
     plt.xlabel("Cost")
     plt.ylabel("Quantity")
     plt.title("Mana Cost")
@@ -44,7 +44,7 @@ def element_distribution(deck, zone="maindeck"):
         else:
             element_types["None"] += qty
     data_show = {e: qty for e, qty in element_types.items() if qty > 0}
-    plt.pie(data_show.values(), labels=data_show.keys())
+    plt.pie(list(data_show.values()), labels=list(data_show.keys()))
     plt.show()
 
 def card_type_distribution(deck, zone=None):
@@ -58,7 +58,7 @@ def card_type_distribution(deck, zone=None):
         else:
             card_types_counter["None"] += qty
     data_show = {e: qty for e, qty in card_types_counter.items() if qty > 0}
-    plt.pie(data_show.values(), labels=data_show.keys())
+    plt.pie(list(data_show.values()), labels=list(data_show.keys()))
     plt.show()
 
 

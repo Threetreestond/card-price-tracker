@@ -467,6 +467,15 @@ def get_prices(product_id=None, date_from=None, date_to=None):
     conn.close()
     return rows
 
+def delete_deck(deck_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM deck_cards WHERE deck_id = ?", (deck_id,))
+    cursor.execute("DELETE FROM decks WHERE deck_id = ?", (deck_id,))
+    conn.commit()
+    conn.close()
+
+
 
 if __name__ == "__main__":
     create_tables()
