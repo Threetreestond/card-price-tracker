@@ -1,7 +1,7 @@
 import sys
 sys.path.insert(0, "src")
 from fastapi import FastAPI
-from database import get_all_decks, get_cards
+from database import get_all_decks, get_cards, get_prices
 from pydantic import BaseModel
 from models import Deck
 
@@ -40,7 +40,6 @@ def delete_deck(deck_id):
 
 # CARD PAGES
 @app.get("/cards")
-@app.get("/cards")
 def get_cards_endpoint(
     group_id: int | None = None,
     card_type: str | None = None,
@@ -68,3 +67,8 @@ def get_cards_endpoint(
         product_id=product_id
     )
     return [dict(card) for card in cards]
+
+@app.get("/cards/{product_id}/prices")
+def get_card_prices(product_id: int, date_from: str | None = None, date_to: str | None = None):
+    pricing = get_prices(product_id=product_id, date_from=date_from,date_to=date_to)
+    return [dict(price) for price in pricing]
