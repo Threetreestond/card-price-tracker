@@ -475,6 +475,27 @@ def delete_deck(deck_id):
     conn.commit()
     conn.close()
 
+def get_deck_with_cards(deck_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM decks WHERE deck_id = ?", (deck_id,))
+    deck_info = cursor.fetchone()
+    cursor.execute("""
+        SELECT 
+            dc.product_id, dc.quantity, dc.zone,
+            c.name, c.rarity, c.cost, c.element, c.card_type
+        FROM deck_cards dc
+        JOIN cards c ON dc.product_id = c.product_id
+        WHERE dc.deck_id = ?
+    """, (deck_id,))
+    card_data = cursor.fetchall()
+    conn.close()
+    return {
+        "deck_id": deck_info["deck_id"],
+        "deck_name": deck_info["name"],
+        "deck_created": deck_info["created_at"],
+        "cards": [dict(card) for card in card_data]}
+
 
 
 if __name__ == "__main__":
