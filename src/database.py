@@ -246,6 +246,15 @@ def save_deck(deck):
     conn.close()
     return deck_id
 
+def get_all_decks():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM decks
+    """)
+    rows = cursor.fetchall()
+    data = [dict(row) for row in rows]
+    return data
 
 def add_card_to_deck(deck_id, product_id, zone, quantity=1):
     """

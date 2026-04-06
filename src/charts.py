@@ -33,7 +33,6 @@ def mana_curve(deck, zone="maindeck"):
     plt.show()
     return
 
-
 def element_distribution(deck, zone="maindeck"):
     deck_info = get_deck_card_data(deck, zone)
     element_types = {"Fire" : 0, "Water" : 0, "Earth" : 0, "Air" : 0, "None" : 0 }
