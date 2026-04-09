@@ -669,6 +669,39 @@ async function browserDecrement(cleanName) {
 
 
 // ============================================================
+// Rename deck modal
+// ============================================================
+function openRenameModal() {
+    const input = document.getElementById('rename-input');
+    input.value = deckData.deck_name;
+    document.getElementById('rename-modal-overlay').classList.add('open');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+}
+
+function closeRenameModal() {
+    document.getElementById('rename-modal-overlay').classList.remove('open');
+}
+
+async function confirmRename() {
+    const name = document.getElementById('rename-input').value.trim();
+    if (!name || name === deckData.deck_name) { closeRenameModal(); return; }
+
+    const res = await fetch(`/decks/${deckId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+
+    if (res.ok) {
+        deckData.deck_name = name;
+        document.getElementById('deck-title').textContent = name;
+        document.title = `${name} — Sorcery Tracker`;
+        closeRenameModal();
+    }
+}
+
+
+// ============================================================
 // Utilities
 // ============================================================
 function formatDate(dateStr) {

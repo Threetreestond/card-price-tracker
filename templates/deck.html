@@ -26,6 +26,7 @@
                 <span class="deck-created" id="deck-created"></span>
             </div>
             <div style="display:flex;gap:0.5rem;align-items:center">
+                <button class="btn btn-secondary" onclick="openRenameModal()">✎ Rename</button>
                 <button class="btn btn-secondary" onclick="openAddCardModal()">Quick Add</button>
                 <button class="btn btn-primary" onclick="openBrowser()">Browse Cards</button>
             </div>
@@ -293,6 +294,25 @@
                 <div class="card-gallery browser-gallery" id="browser-gallery">
                     <div class="loading" style="grid-column:1/-1">Loading...</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename deck modal -->
+    <div class="modal-overlay" id="rename-modal-overlay" onclick="closeRenameModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Rename Deck</h2>
+                <button class="modal-close" onclick="closeRenameModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label" for="rename-input">New Name</label>
+                <input class="form-input" id="rename-input" type="text"
+                    onkeydown="if(event.key === 'Enter') confirmRename()">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeRenameModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmRename()">Rename</button>
             </div>
         </div>
     </div>

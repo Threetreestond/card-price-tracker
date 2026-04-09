@@ -85,6 +85,9 @@ class CardAdd(BaseModel):
 class CuriosaDeckImport(BaseModel):
     curiosa_url: str
 
+class DeckRename(BaseModel):
+    name: str
+
 
 # ── Page routes (return HTML) ─────────────────────────────────────────────────
 
@@ -139,6 +142,16 @@ def delete_deck_endpoint(deck_id: int):
     deck = Deck(deck_id=deck_id)
     deck.delete()
     return {"message": "Deck deleted"}
+
+@app.patch("/decks/{deck_id}")
+def rename_deck_endpoint(deck_id: int, body: DeckRename):
+    """Renames a deck. Returns the updated name."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE decks SET name = ? WHERE deck_id = ?", (body.name, deck_id))
+    conn.commit()
+    conn.close()
+    return {"deck_id": deck_id, "name": body.name}
 
 @app.get("/decks/{deck_id}")
 def get_deck_endpoint(deck_id: int):
