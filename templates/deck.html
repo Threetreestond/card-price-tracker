@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deck Editor — Sorcery Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">Sorcery Tracker</div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Decks</a>
+            <a href="/cards-page" class="nav-link">Cards</a>
+        </div>
+    </nav>
+
+    <main class="container">
+
+        <!-- Deck header -->
+        <div class="page-header">
+            <div class="deck-header-left">
+                <a href="/" class="back-link">← My Decks</a>
+                <h1 class="page-title" id="deck-title">Loading...</h1>
+                <span class="deck-created" id="deck-created"></span>
+            </div>
+            <button class="btn btn-primary" onclick="openAddCardModal()">+ Add Card</button>
+        </div>
+
+        <!-- Two column layout: card list left, stats right -->
+        <div class="deck-editor-layout">
+
+            <!-- Left column: card list grouped by zone -->
+            <div class="deck-editor-left">
+
+                <!-- Zone tabs -->
+                <div class="zone-tabs" id="zone-tabs">
+                    <button class="zone-tab active" onclick="switchZone('all', this)">All</button>
+                    <button class="zone-tab" onclick="switchZone('maindeck', this)">Maindeck</button>
+                    <button class="zone-tab" onclick="switchZone('sitedeck', this)">Site Deck</button>
+                    <button class="zone-tab" onclick="switchZone('avatar', this)">Avatar</button>
+                    <button class="zone-tab" onclick="switchZone('collection', this)">Collection</button>
+                    <button class="zone-tab" onclick="switchZone('maybeboard', this)">Maybeboard</button>
+                </div>
+
+                <!-- Card list -->
+                <div class="card-list" id="card-list">
+                    <div class="loading">Loading deck...</div>
+                </div>
+
+            </div>
+
+            <!-- Right column: stats -->
+            <div class="deck-editor-right">
+
+                <!-- Summary counts -->
+                <div class="stats-panel">
+                    <h3 class="stats-title">Deck Summary</h3>
+                    <div class="stats-grid" id="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-total">—</span>
+                            <span class="stat-label">Total Cards</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-maindeck">—</span>
+                            <span class="stat-label">Maindeck</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-sitedeck">—</span>
+                            <span class="stat-label">Site Deck</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="stat-collection">—</span>
+                            <span class="stat-label">Collection</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mana curve chart -->
+                <div class="stats-panel">
+                    <h3 class="stats-title">Mana Curve</h3>
+                    <div class="chart-container" id="mana-chart">
+                        <div class="chart-bars" id="mana-bars"></div>
+                        <div class="chart-labels" id="mana-labels"></div>
+                    </div>
+                </div>
+
+                <!-- Element distribution -->
+                <div class="stats-panel">
+                    <h3 class="stats-title">Element Distribution</h3>
+                    <div class="element-list" id="element-list"></div>
+                </div>
+
+                <!-- Card type breakdown -->
+                <div class="stats-panel">
+                    <h3 class="stats-title">Card Types</h3>
+                    <div class="element-list" id="type-list"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Add card modal -->
+    <div class="modal-overlay" id="add-card-overlay" onclick="closeAddCardModal()">
+        <div class="modal modal-wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Add Card to Deck</h2>
+                <button class="modal-close" onclick="closeAddCardModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Search filters -->
+                <div class="search-filters">
+                    <input class="form-input" id="search-name" type="text" placeholder="Search by name..." oninput="searchCards()">
+                    <select class="form-input" id="search-element" onchange="searchCards()">
+                        <option value="">All Elements</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Water">Water</option>
+                        <option value="Earth">Earth</option>
+                        <option value="Air">Air</option>
+                    </select>
+                    <select class="form-input" id="search-type" onchange="searchCards()">
+                        <option value="">All Types</option>
+                        <option value="Minion">Minion</option>
+                        <option value="Aura">Aura</option>
+                        <option value="Magic">Magic</option>
+                        <option value="Artifact">Artifact</option>
+                        <option value="Site">Site</option>
+                        <option value="Avatar">Avatar</option>
+                    </select>
+                    <select class="form-input" id="add-zone" >
+                        <option value="maindeck">Maindeck</option>
+                        <option value="sitedeck">Site Deck</option>
+                        <option value="collection">Collection</option>
+                        <option value="avatar">Avatar</option>
+                        <option value="maybeboard">Maybeboard</option>
+                    </select>
+                </div>
+                <!-- Search results -->
+                <div class="search-results" id="search-results">
+                    <p class="search-hint">Search for a card above to add it to your deck</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/deck.js"></script>
+</body>
+</html>

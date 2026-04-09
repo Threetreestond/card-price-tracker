@@ -25,6 +25,8 @@ class CardAdd(BaseModel):
 def root(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
+
+
 # LANDING PAGE
 
 @app.get("/decks")
@@ -99,3 +101,7 @@ def delete_card_in_deck_endpoint(deck_id: int, product_id: int, zone: str, remov
     else:
         deck.decrement_card(product_id, zone, quantity)
         return {"message": "card removed"}
+    
+@app.get("/deck/{deck_id}")
+def deck_page(request: Request, deck_id: int):
+    return templates.TemplateResponse(request, "deck.html")
