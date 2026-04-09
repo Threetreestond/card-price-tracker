@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Gallery — Sorcery Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/additions.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">Sorcery Tracker</div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Decks</a>
+            <a href="/cards-page" class="nav-link active">Cards</a>
+        </div>
+    </nav>
+
+    <main class="container">
+
+        <div class="page-header">
+            <h1 class="page-title">Card Gallery</h1>
+            <span class="result-count" id="result-count"></span>
+        </div>
+
+        <div class="gallery-filters">
+            <input class="form-input" id="filter-name" type="text"
+                placeholder="Search by name..." oninput="debouncedSearch()">
+            <select class="form-input" id="filter-set" onchange="fetchCards()">
+                <option value="">All Sets</option>
+            </select>
+            <select class="form-input" id="filter-element" onchange="fetchCards()">
+                <option value="">All Elements</option>
+                <option value="Fire">Fire</option>
+                <option value="Water">Water</option>
+                <option value="Earth">Earth</option>
+                <option value="Air">Air</option>
+            </select>
+            <select class="form-input" id="filter-type" onchange="fetchCards()">
+                <option value="">All Types</option>
+                <option value="Minion">Minion</option>
+                <option value="Aura">Aura</option>
+                <option value="Magic">Magic</option>
+                <option value="Artifact">Artifact</option>
+                <option value="Site">Site</option>
+                <option value="Avatar">Avatar</option>
+            </select>
+            <select class="form-input" id="filter-rarity" onchange="fetchCards()">
+                <option value="">All Rarities</option>
+                <option value="Ordinary">Ordinary</option>
+                <option value="Exceptional">Exceptional</option>
+                <option value="Elite">Elite</option>
+                <option value="Unique">Unique</option>
+            </select>
+            <select class="form-input" id="filter-cost" onchange="fetchCards()">
+                <option value="">Any Cost</option>
+                <option value="0">0</option><option value="1">1</option>
+                <option value="2">2</option><option value="3">3</option>
+                <option value="4">4</option><option value="5">5</option>
+                <option value="6">6</option><option value="7">7</option>
+                <option value="8">8</option><option value="9">9</option>
+                <option value="10">10</option><option value="X">X</option>
+            </select>
+            <select class="form-input" id="gallery-sort" onchange="renderGallery()">
+                <option value="name">Sort: Name</option>
+                <option value="cost">Sort: Cost</option>
+                <option value="rarity">Sort: Rarity</option>
+                <option value="element">Sort: Element</option>
+            </select>
+            <label class="foil-toggle">
+                <input type="checkbox" id="filter-foil" onchange="fetchCards()">
+                <span>Foil only</span>
+            </label>
+        </div>
+
+        <div class="card-gallery" id="card-gallery">
+            <div class="loading" style="grid-column:1/-1">Loading cards...</div>
+        </div>
+
+    </main>
+
+    <div class="panel-overlay" id="panel-overlay" onclick="closeCardPanel()"></div>
+    <div class="card-panel" id="card-panel">
+        <div class="card-panel-header">
+            <div class="card-panel-title" id="panel-card-name">Card Details</div>
+            <button class="modal-close" onclick="closeCardPanel()">×</button>
+        </div>
+        <div class="card-panel-body" id="panel-body"></div>
+    </div>
+
+    <script src="/static/js/cards.js"></script>
+</body>
+</html>

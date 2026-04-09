@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deck Editor — Sorcery Tracker</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/additions.css">
 </head>
 <body>
 
@@ -18,46 +19,99 @@
 
     <main class="container">
 
-        <!-- Deck header -->
         <div class="page-header">
             <div class="deck-header-left">
                 <a href="/" class="back-link">← My Decks</a>
                 <h1 class="page-title" id="deck-title">Loading...</h1>
                 <span class="deck-created" id="deck-created"></span>
             </div>
-            <button class="btn btn-primary" onclick="openAddCardModal()">+ Add Card</button>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                <button class="btn btn-secondary" onclick="openAddCardModal()">Quick Add</button>
+                <button class="btn btn-primary" onclick="openBrowser()">Browse Cards</button>
+            </div>
         </div>
 
-        <!-- Two column layout: card list left, stats right -->
         <div class="deck-editor-layout">
 
-            <!-- Left column: card list grouped by zone -->
             <div class="deck-editor-left">
 
-                <!-- Zone tabs -->
-                <div class="zone-tabs" id="zone-tabs">
-                    <button class="zone-tab active" onclick="switchZone('all', this)">All</button>
-                    <button class="zone-tab" onclick="switchZone('maindeck', this)">Maindeck</button>
-                    <button class="zone-tab" onclick="switchZone('sitedeck', this)">Site Deck</button>
-                    <button class="zone-tab" onclick="switchZone('avatar', this)">Avatar</button>
-                    <button class="zone-tab" onclick="switchZone('collection', this)">Collection</button>
-                    <button class="zone-tab" onclick="switchZone('maybeboard', this)">Maybeboard</button>
+                <div class="deck-controls">
+                    <div class="zone-tabs" id="zone-tabs">
+                        <button class="zone-tab active" onclick="switchZone('all', this)">All</button>
+                        <button class="zone-tab" onclick="switchZone('maindeck', this)">Maindeck</button>
+                        <button class="zone-tab" onclick="switchZone('sitedeck', this)">Site Deck</button>
+                        <button class="zone-tab" onclick="switchZone('avatar', this)">Avatar</button>
+                        <button class="zone-tab" onclick="switchZone('collection', this)">Collection</button>
+                        <button class="zone-tab" onclick="switchZone('maybeboard', this)">Maybeboard</button>
+                    </div>
+
+                    <!-- Three-level grouping + sort.
+                         group-by-1 is the outermost bucket (e.g. Zone or Set).
+                         group-by-2 subdivides within that (e.g. Rarity).
+                         group-by-3 subdivides further (e.g. Element).
+                         Sort applies to cards within the innermost group. -->
+                    <div class="group-controls">
+                        <span class="control-label">Group</span>
+                        <select class="form-input form-input-sm" id="group-by-1" onchange="renderCardList()">
+                            <option value="zone">Zone</option>
+                            <option value="group_id">Set</option>
+                            <option value="element">Element</option>
+                            <option value="rarity">Rarity</option>
+                            <option value="cost">Cost</option>
+                            <option value="card_type">Type</option>
+                            <option value="none">None</option>
+                        </select>
+                        <span class="control-label">then</span>
+                        <select class="form-input form-input-sm" id="group-by-2" onchange="renderCardList()">
+                            <option value="none">—</option>
+                            <option value="rarity">Rarity</option>
+                            <option value="element">Element</option>
+                            <option value="cost">Cost</option>
+                            <option value="card_type">Type</option>
+                            <option value="group_id">Set</option>
+                        </select>
+                        <span class="control-label">then</span>
+                        <select class="form-input form-input-sm" id="group-by-3" onchange="renderCardList()">
+                            <option value="none">—</option>
+                            <option value="element">Element</option>
+                            <option value="rarity">Rarity</option>
+                            <option value="cost">Cost</option>
+                            <option value="card_type">Type</option>
+                            <option value="group_id">Set</option>
+                        </select>
+                        <span class="control-label">Sort</span>
+                        <select class="form-input form-input-sm" id="sort-by" onchange="renderCardList()">
+                            <option value="cost">Cost</option>
+                            <option value="name">Name</option>
+                            <option value="rarity">Rarity</option>
+                            <option value="element">Element</option>
+                            <option value="price">Price</option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Card list -->
-                <div class="card-list" id="card-list">
-                    <div class="loading">Loading deck...</div>
+                <div class="card-table-wrap">
+                    <div class="card-table-header">
+                        <span class="col-qty">Qty</span>
+                        <span class="col-name">Card</span>
+                        <span class="col-elem">Element</span>
+                        <span class="col-cost">Cost</span>
+                        <span class="col-rarity">Rarity</span>
+                        <span class="col-price">Price</span>
+                        <span class="col-actions"></span>
+                    </div>
+                    <div class="card-list" id="card-list">
+                        <div class="loading">Loading deck...</div>
+                    </div>
                 </div>
 
             </div>
 
-            <!-- Right column: stats -->
             <div class="deck-editor-right">
 
-                <!-- Summary counts -->
                 <div class="stats-panel">
                     <h3 class="stats-title">Deck Summary</h3>
-                    <div class="stats-grid" id="stats-grid">
+                    <div class="stats-grid">
                         <div class="stat-item">
                             <span class="stat-value" id="stat-total">—</span>
                             <span class="stat-label">Total Cards</span>
@@ -77,25 +131,46 @@
                     </div>
                 </div>
 
-                <!-- Mana curve chart -->
+                <!-- Price summary + chart zone selector.
+                     onZoneCheckChange() updates price totals AND all three charts. -->
+                <div class="stats-panel">
+                    <h3 class="stats-title">Price Summary</h3>
+                    <div class="price-zone-checks">
+                        <label class="price-zone-label">
+                            <input type="checkbox" value="maindeck" checked onchange="onZoneCheckChange()"> Maindeck
+                        </label>
+                        <label class="price-zone-label">
+                            <input type="checkbox" value="sitedeck" onchange="onZoneCheckChange()"> Site Deck
+                        </label>
+                        <label class="price-zone-label">
+                            <input type="checkbox" value="collection" onchange="onZoneCheckChange()"> Collection
+                        </label>
+                        <label class="price-zone-label">
+                            <input type="checkbox" value="avatar" onchange="onZoneCheckChange()"> Avatar
+                        </label>
+                        <label class="price-zone-label">
+                            <input type="checkbox" value="maybeboard" onchange="onZoneCheckChange()"> Maybeboard
+                        </label>
+                    </div>
+                    <div class="price-totals" id="price-totals"></div>
+                </div>
+
                 <div class="stats-panel">
                     <h3 class="stats-title">Mana Curve</h3>
-                    <div class="chart-container" id="mana-chart">
+                    <div class="chart-container">
                         <div class="chart-bars" id="mana-bars"></div>
                         <div class="chart-labels" id="mana-labels"></div>
                     </div>
                 </div>
 
-                <!-- Element distribution -->
                 <div class="stats-panel">
                     <h3 class="stats-title">Element Distribution</h3>
-                    <div class="element-list" id="element-list"></div>
+                    <div id="element-list"></div>
                 </div>
 
-                <!-- Card type breakdown -->
                 <div class="stats-panel">
                     <h3 class="stats-title">Card Types</h3>
-                    <div class="element-list" id="type-list"></div>
+                    <div id="type-list"></div>
                 </div>
 
             </div>
@@ -103,17 +178,25 @@
 
     </main>
 
-    <!-- Add card modal -->
+    <div class="panel-overlay" id="panel-overlay" onclick="closeCardPanel()"></div>
+    <div class="card-panel" id="card-panel">
+        <div class="card-panel-header">
+            <div class="card-panel-title" id="panel-card-name">Card Details</div>
+            <button class="modal-close" onclick="closeCardPanel()">×</button>
+        </div>
+        <div class="card-panel-body" id="panel-body"></div>
+    </div>
+
     <div class="modal-overlay" id="add-card-overlay" onclick="closeAddCardModal()">
         <div class="modal modal-wide" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h2>Add Card to Deck</h2>
+                <h2>Quick Add Card</h2>
                 <button class="modal-close" onclick="closeAddCardModal()">×</button>
             </div>
             <div class="modal-body">
-                <!-- Search filters -->
                 <div class="search-filters">
-                    <input class="form-input" id="search-name" type="text" placeholder="Search by name..." oninput="searchCards()">
+                    <input class="form-input" id="search-name" type="text"
+                        placeholder="Search by name..." oninput="searchCards()">
                     <select class="form-input" id="search-element" onchange="searchCards()">
                         <option value="">All Elements</option>
                         <option value="Fire">Fire</option>
@@ -130,7 +213,14 @@
                         <option value="Site">Site</option>
                         <option value="Avatar">Avatar</option>
                     </select>
-                    <select class="form-input" id="add-zone" >
+                    <select class="form-input" id="search-rarity" onchange="searchCards()">
+                        <option value="">All Rarities</option>
+                        <option value="Ordinary">Ordinary</option>
+                        <option value="Exceptional">Exceptional</option>
+                        <option value="Elite">Elite</option>
+                        <option value="Unique">Unique</option>
+                    </select>
+                    <select class="form-input" id="add-zone">
                         <option value="maindeck">Maindeck</option>
                         <option value="sitedeck">Site Deck</option>
                         <option value="collection">Collection</option>
@@ -138,9 +228,70 @@
                         <option value="maybeboard">Maybeboard</option>
                     </select>
                 </div>
-                <!-- Search results -->
                 <div class="search-results" id="search-results">
                     <p class="search-hint">Search for a card above to add it to your deck</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="browser-overlay" onclick="closeBrowser()">
+        <div class="modal modal-fullscreen" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Browse Cards</h2>
+                <div style="display:flex;gap:0.5rem;align-items:center">
+                    <select class="form-input form-input-sm" id="browser-zone">
+                        <option value="maindeck">Maindeck</option>
+                        <option value="sitedeck">Site Deck</option>
+                        <option value="collection">Collection</option>
+                        <option value="avatar">Avatar</option>
+                        <option value="maybeboard">Maybeboard</option>
+                    </select>
+                    <button class="modal-close" onclick="closeBrowser()">×</button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding:1rem 1.5rem">
+                <div class="gallery-filters" style="margin-bottom:1rem">
+                    <input class="form-input" id="browser-name" type="text"
+                        placeholder="Search by name..." oninput="debouncedBrowserSearch()">
+                    <select class="form-input" id="browser-set" onchange="fetchBrowserCards()">
+                        <option value="">All Sets</option>
+                    </select>
+                    <select class="form-input" id="browser-element" onchange="fetchBrowserCards()">
+                        <option value="">All Elements</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Water">Water</option>
+                        <option value="Earth">Earth</option>
+                        <option value="Air">Air</option>
+                    </select>
+                    <select class="form-input" id="browser-type" onchange="fetchBrowserCards()">
+                        <option value="">All Types</option>
+                        <option value="Minion">Minion</option>
+                        <option value="Aura">Aura</option>
+                        <option value="Magic">Magic</option>
+                        <option value="Artifact">Artifact</option>
+                        <option value="Site">Site</option>
+                        <option value="Avatar">Avatar</option>
+                    </select>
+                    <select class="form-input" id="browser-rarity" onchange="fetchBrowserCards()">
+                        <option value="">All Rarities</option>
+                        <option value="Ordinary">Ordinary</option>
+                        <option value="Exceptional">Exceptional</option>
+                        <option value="Elite">Elite</option>
+                        <option value="Unique">Unique</option>
+                    </select>
+                    <select class="form-input" id="browser-cost" onchange="fetchBrowserCards()">
+                        <option value="">Any Cost</option>
+                        <option value="0">0</option><option value="1">1</option>
+                        <option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option>
+                        <option value="6">6</option><option value="7">7</option>
+                        <option value="8">8</option><option value="9">9</option>
+                        <option value="10">10</option><option value="X">X</option>
+                    </select>
+                </div>
+                <div class="card-gallery browser-gallery" id="browser-gallery">
+                    <div class="loading" style="grid-column:1/-1">Loading...</div>
                 </div>
             </div>
         </div>
