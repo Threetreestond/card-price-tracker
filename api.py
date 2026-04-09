@@ -1,13 +1,16 @@
 import sys
 sys.path.insert(0, "src")
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from database import get_all_decks, get_cards, get_prices, get_deck_with_cards
 from pydantic import BaseModel
 from models import Deck
 
 
 app = FastAPI()
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 class DeckCreate(BaseModel):
     name: str
@@ -19,8 +22,8 @@ class CardAdd(BaseModel):
 
 
 @app.get("/")
-def root():
-    return {"message": "hello"}
+def root(request: Request):
+    return templates.TemplateResponse(request, "index.html")
 
 # LANDING PAGE
 

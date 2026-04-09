@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorcery: Contested Realm — Card Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Navigation bar at the top of every page -->
+    <nav class="navbar">
+        <div class="nav-brand">Sorcery Tracker</div>
+        <div class="nav-links">
+            <a href="/" class="nav-link active">Decks</a>
+            <a href="/cards-page" class="nav-link">Cards</a>
+        </div>
+    </nav>
+
+    <!-- Main page content -->
+    <main class="container">
+
+        <!-- Page header with title and create button -->
+        <div class="page-header">
+            <h1 class="page-title">My Decks</h1>
+            <button class="btn btn-primary" onclick="openCreateModal()">+ New Deck</button>
+        </div>
+
+        <!-- Deck grid — cards are injected here by JavaScript -->
+        <div class="deck-grid" id="deck-grid">
+            <!-- Loading state shown while API call is in progress -->
+            <div class="loading" id="loading">Loading decks...</div>
+        </div>
+
+    </main>
+
+    <!-- Create deck modal — hidden until + New Deck is clicked -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeCreateModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Create New Deck</h2>
+                <button class="modal-close" onclick="closeCreateModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label" for="deck-name-input">Deck Name</label>
+                <input 
+                    class="form-input" 
+                    id="deck-name-input" 
+                    type="text" 
+                    placeholder="e.g. Water Aggro"
+                    onkeydown="if(event.key === 'Enter') createDeck()"
+                >
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createDeck()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal-overlay" id="delete-modal-overlay" onclick="closeDeleteModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Delete Deck</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="delete-warning">This will permanently delete <strong id="delete-deck-name"></strong> and all its cards.</p>
+                <label class="form-label" for="delete-confirm-input">Type the deck name to confirm</label>
+                <input 
+                    class="form-input" 
+                    id="delete-confirm-input" 
+                    type="text" 
+                    placeholder="Deck name"
+                >
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
