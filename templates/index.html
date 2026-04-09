@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorcery: Contested Realm — Card Tracker</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/additions.css">
 </head>
 <body>
 
@@ -20,7 +21,10 @@
 
         <div class="page-header">
             <h1 class="page-title">My Decks</h1>
-            <button class="btn btn-primary" onclick="openCreateModal()">+ New Deck</button>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="openImportModal()">↓ Import from Curiosa</button>
+                <button class="btn btn-primary" onclick="openCreateModal()">+ New Deck</button>
+            </div>
         </div>
 
         <!-- Deck grid — populated by JavaScript after fetching /decks -->
@@ -46,6 +50,28 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="createDeck()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import from Curiosa modal -->
+    <div class="modal-overlay" id="import-modal-overlay" onclick="closeImportModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Import from Curiosa</h2>
+                <button class="modal-close" onclick="closeImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label" for="curiosa-url-input">Curiosa Deck URL</label>
+                <input class="form-input" id="curiosa-url-input" type="text"
+                    placeholder="https://curiosa.io/decks/..."
+                    onkeydown="if(event.key === 'Enter') importCuriosaDeck()">
+                <p class="form-hint">The deck must be set to Public on Curiosa.</p>
+                <div id="import-result" class="import-result" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn btn-primary" id="import-btn" onclick="importCuriosaDeck()">Import</button>
             </div>
         </div>
     </div>

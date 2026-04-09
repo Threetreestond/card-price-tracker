@@ -5,7 +5,7 @@ from datetime import date
 
 sys.path.insert(0, "src")
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from database import (
@@ -82,6 +82,9 @@ class CardAdd(BaseModel):
     zone: str
     quantity: int = 1
 
+class CuriosaDeckImport(BaseModel):
+    curiosa_url: str
+
 
 # ── Page routes (return HTML) ─────────────────────────────────────────────────
 
@@ -110,6 +113,26 @@ def create_deck(deck: DeckCreate):
     new_deck = Deck(name=deck.name)
     new_deck.save()
     return {"deck_id": new_deck.deck_id, "name": new_deck.name}
+
+@app.post("/decks/import-curiosa")
+def import_curiosa_deck_endpoint(body: CuriosaDeckImport):
+    """
+    Imports a public Curiosa deck by URL into the local database.
+    Calls Curiosa's internal tRPC API to fetch the deck, then matches
+    each card to a local product_id via clean_name + set + foil.
+
+    Returns a summary of what was imported and any cards that couldn't
+    be matched (so the user knows what to add manually if needed).
+    """
+    try:
+        from curiosa_importer import import_curiosa_deck
+        result = import_curiosa_deck(body.curiosa_url)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"Curiosa import failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Curiosa import failed: {e}")
 
 @app.delete("/decks/{deck_id}")
 def delete_deck_endpoint(deck_id: int):

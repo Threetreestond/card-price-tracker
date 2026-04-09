@@ -1,97 +1,36 @@
 
-/* ── Appended styles ─────────────────────────────────────── */
-
-/* Tabular card list header + column widths */
-.card-table-wrap { display: flex; flex-direction: column; }
-.card-table-header {
-    display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.3rem 0.75rem;
-    font-size: 0.72rem; font-weight: 600;
-    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 0.25rem;
-}
-.col-qty     { min-width: 2.2rem; flex-shrink: 0; }
-.col-name    { flex: 1; }
-.col-elem    { width: 70px; flex-shrink: 0; font-size: 0.75rem; }
-.col-cost    { width: 36px; flex-shrink: 0; text-align: center; font-size: 0.75rem; }
-.col-rarity  { width: 80px; flex-shrink: 0; }
-.col-price   { width: 55px; flex-shrink: 0; text-align: right; }
-.col-actions { width: 72px; flex-shrink: 0; }
-
-/* Card row cell styles (tabular) */
-.card-row-meta-cell { font-size: 0.75rem; color: var(--text-muted); }
-
-/* Group section nested second level */
-.zone-section-inner { margin-left: 1rem; margin-bottom: 0.75rem; }
-.zone-section-title-inner {
-    font-size: 0.7rem; color: var(--text-muted);
-    letter-spacing: 0.06em;
-}
-/* Price and count inline in group headers */
-.zone-section-title { display: flex; align-items: center; gap: 0.5rem; }
-.group-count { color: var(--text-muted); font-weight: 400; }
-.group-price { margin-left: auto; color: var(--accent-success); font-weight: 500; font-size: 0.75rem; }
-
-/* Price summary zone checkboxes */
-.price-zone-checks {
-    display: flex; flex-wrap: wrap; gap: 0.4rem;
-    margin-bottom: 0.75rem;
-}
-.price-zone-label {
-    display: flex; align-items: center; gap: 0.3rem;
-    font-size: 0.78rem; color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.2rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 99px;
-    transition: border-color 0.15s, color 0.15s;
-}
-.price-zone-label:has(input:checked) {
-    border-color: var(--accent);
-    color: var(--text-primary);
-}
-.price-zone-label input { display: none; }
-
-/* Gallery set count badge on tiles */
-.gallery-card-sets { font-size: 0.68rem; color: var(--text-muted); }
-
-/* Full-screen modal for the gallery browser */
-.modal-fullscreen {
-    max-width: 95vw;
-    width: 95vw;
-    max-height: 90vh;
+/* ============================================================
+   Page header actions — groups buttons next to the title
+   ============================================================ */
+.header-actions {
     display: flex;
-    flex-direction: column;
-}
-.modal-fullscreen .modal-body {
-    flex: 1;
-    overflow-y: auto;
-    max-height: calc(90vh - 60px);
-}
-
-/* Browser gallery — same grid as card gallery but inside modal */
-.browser-gallery {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 0.75rem;
+    align-items: center;
 }
 
-/* +/- controls at the bottom of each browser tile */
-.browser-card-controls {
-    display: flex; align-items: center; justify-content: center;
-    gap: 0.4rem;
-    padding: 0.25rem 0;
-    border-top: 1px solid var(--border);
-    margin-top: 0.25rem;
-}
-.browser-card-count {
-    font-size: 0.85rem; font-weight: 600;
+/* ============================================================
+   Import result message (shown inside the import modal)
+   ============================================================ */
+.form-hint {
+    font-size: 0.8rem;
     color: var(--text-muted);
-    min-width: 1.2rem; text-align: center;
+    margin-top: -0.25rem;
 }
-/* Highlight count when card is in the deck */
-.browser-card-count.in-deck { color: var(--accent); }
 
-/* Browser card tiles — slightly smaller than gallery */
-.browser-card .gallery-card-img { aspect-ratio: 3/4; }
-.browser-card .gallery-card-name { font-size: 0.72rem; }
+.import-result {
+    font-size: 0.85rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    line-height: 1.5;
+}
+.import-result--success {
+    background: rgba(90, 224, 160, 0.08);
+    border-color: rgba(90, 224, 160, 0.3);
+    color: var(--accent-success);
+}
+.import-result--error {
+    background: rgba(224, 90, 90, 0.08);
+    border-color: rgba(224, 90, 90, 0.3);
+    color: var(--accent-danger);
+}

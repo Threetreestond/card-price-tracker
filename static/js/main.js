@@ -33,13 +33,9 @@ async function loadDecks() {
         return;
     }
 
-    // Build one deck card HTML per deck and join them all together.
-    // Template literals (backtick strings) allow multi-line HTML with
-    // ${...} variable interpolation — same idea as Python f-strings.
     grid.innerHTML = decks.map(deck => `
         <div class="deck-card" onclick="openDeck(${deck.deck_id})">
 
-            <!-- Avatar thumbnail — shows card art or "?" placeholder -->
             <div class="deck-card-avatar">
                 ${deck.avatar_image
                     ? `<img src="${deck.avatar_image}" alt="Avatar" loading="lazy">`
@@ -51,8 +47,6 @@ async function loadDecks() {
             <div class="deck-card-meta">Created ${formatDate(deck.created_at)}</div>
 
             <div class="deck-card-actions">
-                <!-- event.stopPropagation() prevents the click bubbling up to
-                     the parent div's onclick which would open the deck -->
                 <button class="btn btn-secondary"
                     onclick="event.stopPropagation(); openDeck(${deck.deck_id})">Open</button>
                 <button class="btn btn-danger"
@@ -80,7 +74,6 @@ async function createDeck() {
     const name = document.getElementById('deck-name-input').value.trim();
     if (!name) return;
 
-    // POST /decks with JSON body matching the DeckCreate Pydantic model
     const response = await fetch('/decks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,20 +82,85 @@ async function createDeck() {
 
     if (response.ok) {
         closeCreateModal();
-        loadDecks();  // refresh the grid to show the new deck
+        loadDecks();
+    }
+}
+
+
+// ============================================================
+// Import from Curiosa modal
+// ============================================================
+function openImportModal() {
+    document.getElementById('import-modal-overlay').classList.add('open');
+    document.getElementById('import-result').style.display = 'none';
+    document.getElementById('import-result').textContent = '';
+    document.getElementById('import-btn').disabled = false;
+    document.getElementById('import-btn').textContent = 'Import';
+    setTimeout(() => document.getElementById('curiosa-url-input').focus(), 50);
+}
+
+function closeImportModal() {
+    document.getElementById('import-modal-overlay').classList.remove('open');
+    document.getElementById('curiosa-url-input').value = '';
+    document.getElementById('import-result').style.display = 'none';
+}
+
+async function importCuriosaDeck() {
+    const url = document.getElementById('curiosa-url-input').value.trim();
+    if (!url) return;
+
+    const btn = document.getElementById('import-btn');
+    const resultEl = document.getElementById('import-result');
+
+    // Disable button and show loading state while request is in flight
+    btn.disabled = true;
+    btn.textContent = 'Importing...';
+    resultEl.style.display = 'none';
+    resultEl.className = 'import-result';
+
+    const response = await fetch('/decks/import-curiosa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ curiosa_url: url })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        // Build a success message summarising the import
+        let msg = `✓ "${data.deck_name}" imported — ${data.imported} card(s) added.`;
+        if (data.unmatched.length > 0) {
+            msg += ` ${data.unmatched.length} card(s) not found in database: ${data.unmatched.join(', ')}.`;
+        }
+        resultEl.textContent = msg;
+        resultEl.classList.add('import-result--success');
+        resultEl.style.display = 'block';
+
+        // Refresh the deck grid so the new deck appears immediately
+        loadDecks();
+
+        // Reset button — user can close manually or import another
+        btn.disabled = false;
+        btn.textContent = 'Import Another';
+    } else {
+        // Show the error message from the API
+        const detail = data.detail || 'Import failed. Check the URL and try again.';
+        resultEl.textContent = `✗ ${detail}`;
+        resultEl.classList.add('import-result--error');
+        resultEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Import';
     }
 }
 
 
 // ============================================================
 // Delete deck modal
-// Requires typing the exact deck name to confirm — prevents accidents
 // ============================================================
 function openDeleteModal(deckId, deckName) {
     deckToDelete = { id: deckId, name: deckName };
     document.getElementById('delete-deck-name').textContent = deckName;
     document.getElementById('delete-modal-overlay').classList.add('open');
-    // Reset border colour in case it was turned red from a previous failed attempt
     document.getElementById('delete-confirm-input').style.borderColor = '';
     setTimeout(() => document.getElementById('delete-confirm-input').focus(), 50);
 }
@@ -116,7 +174,6 @@ function closeDeleteModal() {
 async function confirmDelete() {
     const input = document.getElementById('delete-confirm-input').value.trim();
 
-    // Highlight input red if name doesn't match
     if (input !== deckToDelete.name) {
         document.getElementById('delete-confirm-input').style.borderColor = 'var(--accent-danger)';
         return;
