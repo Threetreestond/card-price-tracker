@@ -86,3 +86,13 @@ def add_card_to_deck_endpoint(deck_id: int, card: CardAdd):
     deck = Deck(deck_id=deck_id)
     deck.add_card(card.product_id, card.zone, card.quantity)
     return {"message": "card added"}
+
+@app.delete("/decks/{deck_id}/cards/{product_id}")
+def delete_card_in_deck_endpoint(deck_id: int, product_id: int, zone: str, remove_all: bool = False, quantity: int = 1):
+    deck = Deck(deck_id=deck_id)
+    if remove_all:
+        deck.remove_card(product_id,zone)
+        return {"message": "removed all copies"}
+    else:
+        deck.decrement_card(product_id, zone, quantity)
+        return {"message": "card removed"}

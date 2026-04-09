@@ -295,6 +295,31 @@ def remove_card_from_deck(deck_id, product_id, zone):
     conn.commit()
     conn.close()
 
+def decrement_card_in_deck(deck_id, product_id, zone, quantity=1):
+    """
+    Decrements cards in deck by quantity.
+    Deletes the row entirely rather than setting quantity to 0 or less if quantity becomes 0 or less.
+    """
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE deck_cards SET quantity = quantity - ? 
+        WHERE deck_id = ? AND product_id = ? AND zone = ?
+    """, (quantity, deck_id, product_id, zone))
+
+    cursor.execute("""    
+        SELECT quantity FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?
+    """, (deck_id, product_id, zone))
+    result = cursor.fetchone()
+    if result and result['quantity'] <= 0:
+        cursor.execute("""
+            DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?
+        """, (deck_id, product_id, zone))
+    conn.commit()
+    conn.close()
+
 
 def get_deck_cards(deck_id):
     """

@@ -1,4 +1,4 @@
-from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards, get_deck, delete_deck
+from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards, get_deck, delete_deck, decrement_card_in_deck
 
 
 class Deck:
@@ -57,6 +57,19 @@ class Deck:
         key = (product_id, zone)
         if key in self.cards:
             del self.cards[key]
+
+    def decrement_card(self, product_id, zone, quantity = 1):
+        if self.deck_id is None:
+            self.save()
+        
+        decrement_card_in_deck(self.deck_id, product_id, zone, quantity)
+
+        key = (product_id, zone)
+        if key in self.cards:
+            if self.cards[key] - quantity <= 0:
+                del self.cards[key]
+            else:
+                self.cards[key] -= quantity
 
     def save(self):
         """
