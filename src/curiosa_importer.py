@@ -65,16 +65,17 @@ HEADERS = {
 def _normalise_name(name: str) -> str:
     """
     Normalises a card name for DB matching.
-    Handles two known mismatches between Curiosa and TCGCSV:
-      - Accented characters: Stefánia → Stefania
-      - Punctuation TCGPlayer omits: Guards! → Guards, Zap! → Zap
+    Handles known mismatches between Curiosa and TCGCSV:
+      - Accented characters:  Stefánia → Stefania
+      - Punctuation omitted:  Guards! → Guards, Zap! → Zap
+      - Hyphenated vs spaced: Cave-In → Cave In
     Only used at match time — stored names are never altered.
     """
     name = ''.join(
         c for c in unicodedata.normalize('NFD', name)
         if unicodedata.category(c) != 'Mn'
     )
-    name = name.replace('!', '').replace('?', '').strip()
+    name = name.replace('!', '').replace('?', '').replace('-', ' ').strip()
     return name
 
 
@@ -194,6 +195,8 @@ def _create_deck(conn: sqlite3.Connection, name: str) -> int:
         "INSERT INTO decks (name, created_at) VALUES (?, ?)",
         (name, str(date.today()))
     )
+    if cursor.lastrowid is None:
+        raise RuntimeError("INSERT into decks returned no rowid")
     return cursor.lastrowid
 
 
