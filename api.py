@@ -12,6 +12,10 @@ app = FastAPI()
 class DeckCreate(BaseModel):
     name: str
 
+class CardAdd(BaseModel):
+    product_id: int
+    zone: str
+    quantity: int = 1
 
 
 @app.get("/")
@@ -76,3 +80,9 @@ def get_card_prices(product_id: int, date_from: str | None = None, date_to: str 
 @app.get("/decks/{deck_id}")
 def get_deck_cards(deck_id: int):
     return get_deck_with_cards(deck_id=deck_id)
+
+@app.post("/decks/{deck_id}/cards")
+def add_card_to_deck_endpoint(deck_id: int, card: CardAdd):
+    deck = Deck(deck_id=deck_id)
+    deck.add_card(card.product_id, card.zone, card.quantity)
+    return {"message": "card added"}
