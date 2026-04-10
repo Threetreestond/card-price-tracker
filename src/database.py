@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from datetime import date
-
+from context_manager import get_db_connection
 # Path to the SQLite database file. Defined once here so all functions
 # use the same location — change this in one place if the path moves.
 DB_PATH = "data/cards.db"
@@ -171,14 +171,9 @@ def add_card_to_deck(deck_id, product_id, zone, quantity=1):
     conn.close()
 
 
-def remove_card_from_deck(deck_id, product_id, zone):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?
-    """, (deck_id, product_id, zone))
-    conn.commit()
-    conn.close()
+def remove_card_from_deck(conn, deck_id, product_id, zone):
+    return conn.execute("DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?", (deck_id, product_id, zone)).rowcount
+
 
 
 def decrement_card_in_deck(deck_id, product_id, zone, quantity=1):
@@ -386,8 +381,15 @@ def get_deck_with_cards(deck_id):
 
 
 if __name__ == "__main__":
-    create_tables()
-    prices = get_prices(product_id=521503)
-    print(f"Price rows for Accursed Albatross: {len(prices)}")
-    for price in prices:
-        print(price)
+    # create_tables()
+    # prices = get_prices(product_id=521503)
+    # print(f"Price rows for Accursed Albatross: {len(prices)}")
+    # for price in prices:
+    #     print(price)
+    with get_db_connection(DB_PATH) as conn:
+        returned = remove_card_from_deck(conn, 14, 521503, "maindeck")
+        print(returned)
+        if returned>0:
+            print("Accursed Albatross removed")
+        else:
+            print("No card removed")

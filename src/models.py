@@ -50,7 +50,7 @@ class Deck:
         """
         if self.deck_id is None:
             self.save()
-
+        
         remove_card_from_deck(self.deck_id, product_id, zone)
 
         # Remove from in-memory state if present
