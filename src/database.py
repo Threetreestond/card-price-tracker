@@ -222,44 +222,37 @@ def get_card_count():
     return count
 
 
-def get_cards(group_id=None, card_type=None, element=None, cost=None,
+def get_cards(conn, group_id=None, card_type=None, element=None, cost=None,
               rarity=None, threshold=None, card_category=None,
               power_rating=None, defense_power=None, foil=None, product_id=None):
     """
     Flexible card query with optional filters.
     Base filter excludes sealed products (card_type IS NOT NULL).
     """
+    if foil is not None:
+        foil = 1 if foil else 0
     query = "SELECT * FROM cards WHERE card_type IS NOT NULL"
     params = []
-    if group_id:
-        query += " AND group_id = ?"; params.append(group_id)
-    if card_type:
-        query += " AND card_type = ?"; params.append(card_type)
-    if element:
-        query += " AND element = ?"; params.append(element)
-    if cost is not None:
-        query += " AND cost = ?"; params.append(cost)
-    if rarity:
-        query += " AND rarity = ?"; params.append(rarity)
-    if threshold:
-        query += " AND threshold = ?"; params.append(threshold)
-    if card_category:
-        query += " AND card_category = ?"; params.append(card_category)
-    if power_rating:
-        query += " AND power_rating = ?"; params.append(power_rating)
-    if defense_power:
-        query += " AND defense_power = ?"; params.append(defense_power)
-    if foil is not None:
-        query += " AND foil = ?"; params.append(1 if foil else 0)
-    if product_id is not None:
-        query += " AND product_id = ?"; params.append(product_id)
+    filters = [
+        ("group_id = ?",   group_id),
+        ("card_type = ?",   card_type),
+        ("element = ?",   element),
+        ("cost = ?",   cost),
+        ("rarity = ?",   rarity),
+        ("threshold = ?",   threshold),
+        ("card_category = ?",   card_category),
+        ("power_rating = ?",   power_rating),
+        ("defense_power = ?",   defense_power),
+        ("foil = ?",   foil),
+        ("product_id = ?",   product_id)
+    ]
+
+    for clause, value in filters:
+        if value is not None:
+            query += f" AND {clause}"
+            params.append(value)
     query += " ORDER BY name ASC"
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(query, tuple(params))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    return conn.execute(query, params).fetchall()
 
 
 def get_cards_by_ids(product_ids):
@@ -273,25 +266,24 @@ def get_cards_by_ids(product_ids):
     return rows
 
 
-def get_prices(product_id=None, date_from=None, date_to=None):
+def get_prices(conn, product_id=None, date_from=None, date_to=None):
     """
     Fetches price history ordered oldest→newest for chart rendering.
     """
+    filters = [
+    ("product_id = ?",      product_id),
+    ("date_fetched >= ?",   date_from),
+    ("date_fetched <= ?",   date_to),
+    ]
+
     query = "SELECT * FROM prices WHERE 1=1"
     params = []
-    if product_id is not None:
-        query += " AND product_id = ?"; params.append(product_id)
-    if date_from:
-        query += " AND date_fetched >= ?"; params.append(date_from)
-    if date_to:
-        query += " AND date_fetched <= ?"; params.append(date_to)
+    for clause, value in filters:
+        if value is not None:
+            query += f" AND {clause}"
+            params.append(value)
     query += " ORDER BY date_fetched ASC"
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(query, tuple(params))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    return conn.execute(query, params).fetchall()
 
 
 def get_latest_price(product_id):
@@ -386,6 +378,8 @@ if __name__ == "__main__":
     # print(f"Price rows for Accursed Albatross: {len(prices)}")
     # for price in prices:
     #     print(price)
+
+    # caller is policy function is mechanism, the mechanism has no understanding on good or bad, how you define policy judges the mechanism
     with get_db_connection(DB_PATH) as conn:
         returned = remove_card_from_deck(conn, 14, 521503, "maindeck")
         print(returned)
