@@ -7,21 +7,7 @@ from context_manager import get_db_connection
 DB_PATH = "data/cards.db"
 
 
-def get_connection():
-    """
-    Creates and returns a database connection.
-    - Creates the data/ directory if it doesn't exist (os.makedirs with exist_ok=True)
-    - row_factory = sqlite3.Row means rows are returned as dict-like objects,
-      so you can access columns by name (row['name']) instead of position (row[0])
-    """
-    os.makedirs("data", exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def create_tables():
-    conn = get_connection()
+def create_tables(conn):
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cards (
@@ -76,15 +62,12 @@ def create_tables():
             PRIMARY KEY (deck_id, product_id, zone)
         )
     """)
-    conn.commit()
-    conn.close()
 
-
-def save_cards(card):
+def save_cards(conn, card):
     ext = {d["name"]: d["value"] for d in card["extendedData"]}
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
+    is_foil = '(Foil)' in card["name"]
+    foil_int = 1 if is_foil else 0
+    conn.execute("""
         INSERT OR IGNORE INTO cards (
             product_id, group_id, category_id, name, clean_name,
             image_url, url, rarity, description, cost, threshold,
@@ -98,17 +81,13 @@ def save_cards(card):
         ext.get("Threshold"), ext.get("Element"), ext.get("Type Line"),
         ext.get("CardCategory"), ext.get("CardType"), ext.get("Card Subtype"),
         ext.get("Power Rating"), ext.get("Defense Power"), ext.get("Life"),
-        ext.get("Flavor Text"), '(Foil)' in card["name"]
+        ext.get("Flavor Text"), foil_int
     ))
-    conn.commit()
-    conn.close()
 
 
-def save_prices(price):
+def save_prices(conn, price):
     today = str(date.today())
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
+    conn.execute("""
         INSERT OR IGNORE INTO prices (
             product_id, sub_type_name, low_price, mid_price,
             high_price, market_price, date_fetched
@@ -117,28 +96,21 @@ def save_prices(price):
         price["productId"], price["subTypeName"], price["lowPrice"],
         price["midPrice"], price["highPrice"], price["marketPrice"], today,
     ))
-    conn.commit()
-    conn.close()
 
 
-def save_deck(deck):
+def save_deck(conn, deck):
     today = str(date.today())
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO decks (name, created_at) VALUES (?, ?)", (deck.name, today))
-    deck_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
+    deck_id = conn.execute("INSERT INTO decks (name, created_at) VALUES (?, ?)", (deck.name, today)).lastrowid
     return deck_id
 
 
-def get_all_decks():
+def get_all_decks(conn):
     """
     Returns all decks with their avatar card image if one exists.
     Joins deck_cards → cards to find the avatar zone card for each deck.
     Used by the landing page to show deck thumbnails.
+    N+1 query issue, will refactor in the future
     """
-    conn = get_connection()
     cursor = conn.cursor()
     # Fetch all decks
     cursor.execute("SELECT * FROM decks ORDER BY created_at DESC")
@@ -154,73 +126,36 @@ def get_all_decks():
         row = cursor.fetchone()
         # If no avatar found, image_url will be None — frontend shows "?" placeholder
         deck['avatar_image'] = row['image_url'] if row else None
-    conn.close()
     return decks
 
 
-def add_card_to_deck(deck_id, product_id, zone, quantity=1):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
+def add_card_to_deck(conn, deck_id, product_id, zone, quantity=1):
+    added_card = conn.execute("""
         INSERT INTO deck_cards (deck_id, product_id, zone, quantity)
         VALUES (?, ?, ?, ?)
         ON CONFLICT (deck_id, product_id, zone)
         DO UPDATE SET quantity = quantity + ?
-    """, (deck_id, product_id, zone, quantity, quantity))
-    conn.commit()
-    conn.close()
-
+    """, (deck_id, product_id, zone, quantity, quantity)).rowcount
+    return added_card
 
 def remove_card_from_deck(conn, deck_id, product_id, zone):
     return conn.execute("DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?", (deck_id, product_id, zone)).rowcount
 
+def decrement_card_in_deck(conn, deck_id, product_id, zone, quantity=1):
+    """Returns 1 if the card was removed entirely, 0 if it was decremented-but-survived OR if it was never in the deck to begin with."""
+    conn.execute("UPDATE deck_cards SET quantity = quantity - ? WHERE deck_id = ? AND product_id = ? AND zone = ?", (quantity, deck_id, product_id, zone))
+    removed = conn.execute("DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ? AND quantity <= 0", (deck_id, product_id, zone)).rowcount
+    return removed
+
+def get_deck_cards(conn, deck_id):
+    return conn.execute("SELECT product_id, quantity, zone FROM deck_cards WHERE deck_id = ?", (deck_id,)).fetchall()
 
 
-def decrement_card_in_deck(deck_id, product_id, zone, quantity=1):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE deck_cards SET quantity = quantity - ?
-        WHERE deck_id = ? AND product_id = ? AND zone = ?
-    """, (quantity, deck_id, product_id, zone))
-    cursor.execute("""
-        SELECT quantity FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?
-    """, (deck_id, product_id, zone))
-    result = cursor.fetchone()
-    if result and result['quantity'] <= 0:
-        cursor.execute("""
-            DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?
-        """, (deck_id, product_id, zone))
-    conn.commit()
-    conn.close()
+def get_deck(conn, deck_id):
+    return conn.execute("SELECT * FROM decks WHERE deck_id = ?", (deck_id,)).fetchone()
 
-
-def get_deck_cards(deck_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT product_id, quantity, zone FROM deck_cards WHERE deck_id = ?", (deck_id,))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-
-def get_deck(deck_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM decks WHERE deck_id = ?", (deck_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return row
-
-
-def get_card_count():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM cards")
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count
-
+def get_card_count(conn):
+    return conn.execute("SELECT COUNT(*) FROM cards").fetchone()[0]
 
 def get_cards(conn, group_id=None, card_type=None, element=None, cost=None,
               rarity=None, threshold=None, card_category=None,
@@ -254,17 +189,12 @@ def get_cards(conn, group_id=None, card_type=None, element=None, cost=None,
     query += " ORDER BY name ASC"
     return conn.execute(query, params).fetchall()
 
-
-def get_cards_by_ids(product_ids):
+def get_cards_by_ids(conn, product_ids):
+    if not product_ids:
+        return []
     placeholders = ",".join("?" * len(product_ids))
     query = f"SELECT * FROM cards WHERE product_id IN ({placeholders})"
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(query, tuple(product_ids))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
+    return conn.execute(query, product_ids).fetchall()
 
 def get_prices(conn, product_id=None, date_from=None, date_to=None):
     """
@@ -286,40 +216,32 @@ def get_prices(conn, product_id=None, date_from=None, date_to=None):
     return conn.execute(query, params).fetchall()
 
 
-def get_latest_price(product_id):
+def get_latest_price(conn, product_id):
     """
     Returns the most recent price row for a card.
     Used to show current price alongside card info without fetching full history.
     """
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM prices WHERE product_id = ?
-        ORDER BY date_fetched DESC LIMIT 1
-    """, (product_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    latest_price = conn.execute("SELECT * FROM prices WHERE product_id = ? ORDER BY date_fetched DESC LIMIT 1", (product_id,)).fetchone()
+    return dict(latest_price) if latest_price else None
 
 
-def delete_deck(deck_id):
-    """Delete deck and all its cards (deck_cards first to avoid orphaned rows)."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM deck_cards WHERE deck_id = ?", (deck_id,))
-    cursor.execute("DELETE FROM decks WHERE deck_id = ?", (deck_id,))
-    conn.commit()
-    conn.close()
+def delete_deck(conn, deck_id):
+    """
+    Delete deck and all its cards.
+    Need to fix schema with FOREIGN KEY (deck_id) REFERENCES decks(deck_id) ON DELETE CASCADE
+    """
+    conn.execute("DELETE FROM deck_cards WHERE deck_id = ?", (deck_id,))
+    return conn.execute("DELETE FROM decks WHERE deck_id = ?", (deck_id,)).rowcount
 
 
-def get_deck_with_cards(deck_id):
+def get_deck_with_cards(conn, deck_id):
     """
     Returns deck metadata plus all cards with full details.
     Uses a JOIN to get card attributes alongside zone/quantity from deck_cards.
     Also fetches the latest price for each card so the frontend can display
     current market price and calculate deck total value.
+    N+1 query problem, will refactor in the future
     """
-    conn = get_connection()
     cursor = conn.cursor()
 
     # Fetch deck metadata
@@ -355,8 +277,6 @@ def get_deck_with_cards(deck_id):
         price_row = cursor.fetchone()
         price_map[pid] = dict(price_row) if price_row else {}
 
-    conn.close()
-
     # Attach latest price to each card row
     cards = []
     for row in card_rows:
@@ -365,21 +285,17 @@ def get_deck_with_cards(deck_id):
         cards.append(card)
 
     return {
+        "deck": {
         "deck_id": deck_info["deck_id"],
-        "deck_name": deck_info["name"],
-        "deck_created": deck_info["created_at"],
+        "name": deck_info["name"],
+        "created": deck_info["created_at"]
+        },
         "cards": cards
     }
 
 
 if __name__ == "__main__":
-    # create_tables()
-    # prices = get_prices(product_id=521503)
-    # print(f"Price rows for Accursed Albatross: {len(prices)}")
-    # for price in prices:
-    #     print(price)
-
-    # caller is policy function is mechanism, the mechanism has no understanding on good or bad, how you define policy judges the mechanism
+    # caller is policy whereas function is mechanism, the mechanism has no understanding on good or bad, how you define policy judges the mechanism
     with get_db_connection(DB_PATH) as conn:
         returned = remove_card_from_deck(conn, 14, 521503, "maindeck")
         print(returned)
