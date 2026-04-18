@@ -196,7 +196,7 @@ def get_cards_by_ids(conn, product_ids):
     query = f"SELECT * FROM cards WHERE product_id IN ({placeholders})"
     return conn.execute(query, product_ids).fetchall()
 
-def get_prices(conn, product_id=None, date_from=None, date_to=None):
+def get_prices(conn: sqlite3.Connection, product_id: int | None = None, date_from: str|None = None, date_to: str|None = None) -> list[sqlite3.Row]:
     """
     Fetches price history ordered oldest→newest for chart rendering.
     """

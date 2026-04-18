@@ -131,6 +131,11 @@ def db_with_cards(db_conn):
     add_card_to_deck(db_conn, deck.deck_id, 521514, "maindeck", quantity=1)
     add_card_to_deck(db_conn, deck.deck_id, 521530, "avatar", quantity=1)
 
+    deck2 = Deck(name="Test Deck 2")
+    deck2.deck_id = save_deck(db_conn, deck2)
+    add_card_to_deck(db_conn, deck2.deck_id, 521503, "maindeck", quantity=3)
+    add_card_to_deck(db_conn, deck2.deck_id, 521514, "maindeck", quantity=1)
+    add_card_to_deck(db_conn, deck2.deck_id, 521530, "avatar", quantity=1)
     return db_conn
 
 
@@ -190,3 +195,62 @@ def test_decrement_card_in_deck_card_removed(db_with_cards):
     assert return_value == 1, "this has not deleted a qty = 1 card when decrementing by 1 when it should return 1: row deletion"
     test_card = [card for card in get_deck_cards(db_with_cards, deck_id) if card["product_id"] == 521514 and card["zone"] == "maindeck"]
     assert not test_card, "test card should be empty"
+
+
+def test_delete_deck_with_cards(db_with_cards):
+    all_decks = get_all_decks(db_with_cards)
+    deck_id = all_decks[0]["deck_id"]
+    delete_deck(db_with_cards, deck_id)
+    return_value_deck = get_deck(db_with_cards, deck_id)
+    return_value_cards = get_deck_cards(db_with_cards, deck_id)
+    assert not return_value_deck, "deck_id should not exist anymore after delete_deck is called"
+    assert not return_value_cards, "Cards should be deleted for the deck_id that was deleted"
+
+def test_delete_deck_non_existent(db_with_cards):
+    return_value = delete_deck(db_with_cards, 999)
+    assert return_value == 0, "no rows should be returned as no deck existed to have rows deleted from"
+
+
+def test_delete_deck_other_deck_untouched(db_with_cards):
+    all_decks = get_all_decks(db_with_cards)
+    deck_one_id = all_decks[0]["deck_id"]
+    deck_two_id = all_decks[1]["deck_id"]
+    deck_two_cards = get_deck_cards(db_with_cards, deck_two_id)
+    delete_deck(db_with_cards, deck_one_id)
+    assert deck_two_cards == get_deck_cards(db_with_cards, deck_two_id), "content should be untouched and they should be equal as deck one was deleted not deck two"
+
+
+
+def test_get_cards_no_parameters(db_with_cards):
+    cards = get_cards(db_with_cards)
+    assert len(cards) == 4, "there are 4 cards in the database, all should return with no filters"
+    result_ids = {card["product_id"] for card in cards}
+    assert result_ids == {521503, 521514, 521530, 521540}, "returned card ids should match test data"
+
+@pytest.mark.parametrize("filters, expected_ids", [
+    ({"element": "Water"}, {521503, 521540}),
+    ({"rarity": "Ordinary"}, {521503, 521540}),
+    ({"cost": "5"}, {521530}),
+    ({"element": "Fire"}, {521530}),
+    ({"group_id": 100}, {521503, 521514, 521530, 521540}),
+    ({"power_rating": 3}, {521514}),
+    ({"foil": True}, {521540}),
+    ({"foil": False}, {521503, 521514, 521530}),
+    ({"element": "Earth"}, set()),
+])
+def test_get_cards_single_filter(db_with_cards, filters, expected_ids):
+    results = get_cards(db_with_cards, **filters)
+    result_ids = {card["product_id"] for card in results}
+    assert result_ids == expected_ids
+
+
+@pytest.mark.parametrize("filters, expected_ids", [
+    ({"element": "Water", "rarity": "Ordinary"}, {521503, 521540}),
+    ({"rarity": "Exceptional", "cost": "5"}, {521530}),
+    ({"cost": "5", "element": "Fire"}, {521530}),
+    ({"defense_power": 5, "card_type": "Minion"}, {521530}),
+])
+def test_get_cards_multiple_filters(db_with_cards, filters, expected_ids):
+    results = get_cards(db_with_cards, **filters)
+    result_ids = {card["product_id"] for card in results}
+    assert result_ids == expected_ids
