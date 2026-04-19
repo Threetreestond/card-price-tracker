@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from database import (
     get_all_decks, get_cards, get_prices,
-    get_deck_with_cards, get_latest_price, create_tables, get_connection
+    get_deck_with_cards, get_latest_price, create_tables
 )
 from pydantic import BaseModel
 from models import Deck
