@@ -20,47 +20,46 @@ Usage:
     result = import_curiosa_deck("https://curiosa.io/decks/cmlumsqg400ua04l8i2e71kih")
 """
 
-import re
 import json
 import logging
-import unicodedata
-import requests
-from urllib.parse import quote
+import re
 import sqlite3
+import unicodedata
+from urllib.parse import quote
+
+import requests
 
 log = logging.getLogger(__name__)
 
 # ── Set code → TCGCSV group_id mapping ───────────────────────────────────────
 SET_CODE_TO_GROUP_ID = {
-    "alp": 23335,   # Alpha
-    "bet": 23336,   # Beta
-    "pro": 23514,   # Dust Reward / Promotional
-    "art": 23588,   # Arthurian Legends
-    "alt": 23778,   # Arthurian Legends Promo
-    "dra": 24378,   # Dragonlord
-    "got": 24471,   # Gothic
+    "alp": 23335,  # Alpha
+    "bet": 23336,  # Beta
+    "pro": 23514,  # Dust Reward / Promotional
+    "art": 23588,  # Arthurian Legends
+    "alt": 23778,  # Arthurian Legends Promo
+    "dra": 24378,  # Dragonlord
+    "got": 24471,  # Gothic
 }
 
 # Non-decklist zones map directly to local zone names
 ZONE_MAP = {
-    "avatar":     "avatar",
-    "sideboard":  "sideboard",
+    "avatar": "avatar",
+    "sideboard": "sideboard",
     "maybeboard": "maybeboard",
 }
 
 CURIOSA_BASE = "https://curiosa.io/api/trpc"
 
 HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
-    ),
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"),
     "Accept": "application/json",
     "Referer": "https://curiosa.io",
 }
 
 
 # ── Name normalisation ────────────────────────────────────────────────────────
+
 
 def _normalise_name(name: str) -> str:
     """
@@ -71,15 +70,13 @@ def _normalise_name(name: str) -> str:
       - Hyphenated vs spaced: Cave-In → Cave In
     Only used at match time — stored names are never altered.
     """
-    name = ''.join(
-        c for c in unicodedata.normalize('NFD', name)
-        if unicodedata.category(c) != 'Mn'
-    )
-    name = name.replace('!', '').replace('?', '').replace('-', ' ').strip()
+    name = "".join(c for c in unicodedata.normalize("NFD", name) if unicodedata.category(c) != "Mn")
+    name = name.replace("!", "").replace("?", "").replace("-", " ").strip()
     return name
 
 
 # ── Public entry point ────────────────────────────────────────────────────────
+
 
 def import_curiosa_deck(curiosa_url: str, db_path: str = "data/cards.db") -> dict:
     """
@@ -116,10 +113,7 @@ def import_curiosa_deck(curiosa_url: str, db_path: str = "data/cards.db") -> dic
     finally:
         conn.close()
 
-    log.info(
-        f"Import complete — deck_id={new_deck_id}, "
-        f"imported={imported}, unmatched={len(unmatched)}"
-    )
+    log.info(f"Import complete — deck_id={new_deck_id}, imported={imported}, unmatched={len(unmatched)}")
     return {
         "deck_id": new_deck_id,
         "deck_name": deck_name,
@@ -129,6 +123,7 @@ def import_curiosa_deck(curiosa_url: str, db_path: str = "data/cards.db") -> dic
 
 
 # ── URL / tRPC helpers ────────────────────────────────────────────────────────
+
 
 def _extract_deck_id(url: str) -> str | None:
     match = re.search(r"curiosa\.io/decks/([a-z0-9]+)", url)
@@ -188,23 +183,18 @@ def _fetch_all_zones(deck_id: str) -> dict[str, list]:
 
 # ── Database helpers ──────────────────────────────────────────────────────────
 
+
 def _create_deck(conn: sqlite3.Connection, name: str) -> int:
     from datetime import date
+
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO decks (name, created_at) VALUES (?, ?)",
-        (name, str(date.today()))
-    )
+    cursor.execute("INSERT INTO decks (name, created_at) VALUES (?, ?)", (name, str(date.today())))
     if cursor.lastrowid is None:
         raise RuntimeError("INSERT into decks returned no rowid")
     return cursor.lastrowid
 
 
-def _import_cards(
-    conn: sqlite3.Connection,
-    deck_id: int,
-    zones: dict[str, list]
-) -> tuple[int, list]:
+def _import_cards(conn: sqlite3.Connection, deck_id: int, zones: dict[str, list]) -> tuple[int, list]:
     cursor = conn.cursor()
     imported = 0
     unmatched = []
@@ -239,23 +229,21 @@ def _import_cards(
                 unmatched.append(card_name)
                 continue
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO deck_cards (deck_id, product_id, zone, quantity)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT (deck_id, product_id, zone)
                 DO UPDATE SET quantity = quantity + ?
-            """, (deck_id, product_id, local_zone, quantity, quantity))
+            """,
+                (deck_id, product_id, local_zone, quantity, quantity),
+            )
             imported += 1
 
     return imported, unmatched
 
 
-def _find_product_id(
-    cursor: sqlite3.Cursor,
-    card_name: str,
-    group_id: int | None,
-    is_foil: bool
-) -> int | None:
+def _find_product_id(cursor: sqlite3.Cursor, card_name: str, group_id: int | None, is_foil: bool) -> int | None:
     """
     Tiered lookup with name normalisation to handle:
       - Punctuation differences (Guards! vs Guards)
@@ -273,10 +261,7 @@ def _find_product_id(
 
     # Attempt 1: exact name, exact set
     if group_id is not None:
-        cursor.execute(
-            "SELECT product_id FROM cards WHERE clean_name = ? AND group_id = ?",
-            (exact_name, group_id)
-        )
+        cursor.execute("SELECT product_id FROM cards WHERE clean_name = ? AND group_id = ?", (exact_name, group_id))
         row = cursor.fetchone()
         if row:
             return row[0]
@@ -284,8 +269,7 @@ def _find_product_id(
     # Attempt 2: normalised name, exact set
     if group_id is not None and normalised_name != exact_name:
         cursor.execute(
-            "SELECT product_id FROM cards WHERE clean_name = ? AND group_id = ?",
-            (normalised_name, group_id)
+            "SELECT product_id FROM cards WHERE clean_name = ? AND group_id = ?", (normalised_name, group_id)
         )
         row = cursor.fetchone()
         if row:
@@ -293,8 +277,7 @@ def _find_product_id(
 
     # Attempt 3: normalised name, any set
     cursor.execute(
-        "SELECT product_id FROM cards WHERE clean_name = ? ORDER BY group_id DESC LIMIT 1",
-        (normalised_name,)
+        "SELECT product_id FROM cards WHERE clean_name = ? ORDER BY group_id DESC LIMIT 1", (normalised_name,)
     )
     row = cursor.fetchone()
     if row:
@@ -304,17 +287,11 @@ def _find_product_id(
     if is_foil:
         base_norm = _normalise_name(card_name)
         if group_id is not None:
-            cursor.execute(
-                "SELECT product_id FROM cards WHERE clean_name = ? AND group_id = ?",
-                (base_norm, group_id)
-            )
+            cursor.execute("SELECT product_id FROM cards WHERE clean_name = ? AND group_id = ?", (base_norm, group_id))
             row = cursor.fetchone()
             if row:
                 return row[0]
-        cursor.execute(
-            "SELECT product_id FROM cards WHERE clean_name = ? ORDER BY group_id DESC LIMIT 1",
-            (base_norm,)
-        )
+        cursor.execute("SELECT product_id FROM cards WHERE clean_name = ? ORDER BY group_id DESC LIMIT 1", (base_norm,))
         row = cursor.fetchone()
         if row:
             return row[0]

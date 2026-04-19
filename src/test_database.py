@@ -1,9 +1,22 @@
 import pytest
+
 from context_manager import get_db_connection
-from database import create_tables, save_deck, get_deck, decrement_card_in_deck, get_cards, delete_deck, add_card_to_deck, save_cards, save_prices, get_all_decks, get_deck_cards, get_prices, get_latest_price
+from database import (
+    add_card_to_deck,
+    create_tables,
+    decrement_card_in_deck,
+    delete_deck,
+    get_all_decks,
+    get_cards,
+    get_deck,
+    get_deck_cards,
+    get_latest_price,
+    get_prices,
+    save_cards,
+    save_deck,
+    save_prices,
+)
 from models import Deck
-
-
 
 TEST_CARDS = [
     {
@@ -105,10 +118,38 @@ TEST_CARDS = [
 ]
 
 TEST_PRICES = [
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.05, "midPrice": 0.10, "highPrice": 0.25, "marketPrice": 0.08},
-    {"productId": 521540, "subTypeName": "Foil", "lowPrice": 0.50, "midPrice": 1.00, "highPrice": 2.00, "marketPrice": 0.75},
-    {"productId": 521514, "subTypeName": "Normal", "lowPrice": 1.50, "midPrice": 2.50, "highPrice": 4.00, "marketPrice": 2.00},
-    {"productId": 521530, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50},
+    {
+        "productId": 521503,
+        "subTypeName": "Normal",
+        "lowPrice": 0.05,
+        "midPrice": 0.10,
+        "highPrice": 0.25,
+        "marketPrice": 0.08,
+    },
+    {
+        "productId": 521540,
+        "subTypeName": "Foil",
+        "lowPrice": 0.50,
+        "midPrice": 1.00,
+        "highPrice": 2.00,
+        "marketPrice": 0.75,
+    },
+    {
+        "productId": 521514,
+        "subTypeName": "Normal",
+        "lowPrice": 1.50,
+        "midPrice": 2.50,
+        "highPrice": 4.00,
+        "marketPrice": 2.00,
+    },
+    {
+        "productId": 521530,
+        "subTypeName": "Normal",
+        "lowPrice": 5.00,
+        "midPrice": 8.00,
+        "highPrice": 12.00,
+        "marketPrice": 7.50,
+    },
 ]
 
 
@@ -117,6 +158,7 @@ def db_conn():
     with get_db_connection(":memory:") as conn:
         create_tables(conn)
         yield conn
+
 
 @pytest.fixture
 def db_with_cards(db_conn):
@@ -139,22 +181,18 @@ def db_with_cards(db_conn):
     return db_conn
 
 
-
 def test_save_deck(db_conn):
     deck = Deck(name="Test Name")
     deck.deck_id = save_deck(db_conn, deck)
-    result = get_deck(db_conn, deck.deck_id) 
+    result = get_deck(db_conn, deck.deck_id)
     assert result is not None, "a deck should have been saved"
     assert result["name"] == deck.name, "Deck name should match what was saved"
 
 
-@pytest.mark.parametrize("deck_name", [
-    "Water Control",
-    "Tom's Deck",
-    "Deck with 'quotes' and \"doubles\"",
-    "🔥 Fire Deck 🔥",
-    "'; DROP TABLE decks; --"
-])
+@pytest.mark.parametrize(
+    "deck_name",
+    ["Water Control", "Tom's Deck", "Deck with 'quotes' and \"doubles\"", "🔥 Fire Deck 🔥", "'; DROP TABLE decks; --"],
+)
 def test_save_deck_preserves_name(db_conn, deck_name):
     # same body as your existing test, but using deck_name
     deck = Deck(name=deck_name)
@@ -172,32 +210,45 @@ def test_save_deck_empty_name(db_conn):
     assert result["name"] == deck.name, "Deck name should match what was saved"
 
 
-
 def test_save_deck_duplicate_name(db_conn):
     deck_one = Deck(name="Duplicate Name")
     deck_one.deck_id = save_deck(db_conn, deck_one)
-    result_one = get_deck(db_conn, deck_one.deck_id) 
-    
+    result_one = get_deck(db_conn, deck_one.deck_id)
+
     deck_two = Deck(name="Duplicate Name")
     deck_two.deck_id = save_deck(db_conn, deck_two)
     result_two = get_deck(db_conn, deck_two.deck_id)
     assert result_one is not None and result_two is not None, "both decks should be retrieved succesfully"
     assert result_one["deck_id"] != result_two["deck_id"], "Deck ids should be different"
 
+
 def test_decrement_card_in_deck_quantity_remains(db_with_cards):
     all_decks = get_all_decks(db_with_cards)
     deck_id = all_decks[0]["deck_id"]
     return_value = decrement_card_in_deck(db_with_cards, deck_id, 521503, "maindeck")
-    assert return_value == 0, "this has deleted a qty > 1 card when decrementing by 1 when it should return 0: no row deletion"
-    test_card = [card for card in get_deck_cards(db_with_cards, deck_id) if card["product_id"] == 521503 and card["zone"] == "maindeck"]
+    assert return_value == 0, (
+        "this has deleted a qty > 1 card when decrementing by 1 when it should return 0: no row deletion"
+    )
+    test_card = [
+        card
+        for card in get_deck_cards(db_with_cards, deck_id)
+        if card["product_id"] == 521503 and card["zone"] == "maindeck"
+    ]
     assert test_card[0]["quantity"] == 2, "incorrect quantity, expecting 2"
-    
+
+
 def test_decrement_card_in_deck_card_removed(db_with_cards):
     all_decks = get_all_decks(db_with_cards)
     deck_id = all_decks[0]["deck_id"]
     return_value = decrement_card_in_deck(db_with_cards, deck_id, 521514, "maindeck")
-    assert return_value == 1, "this has not deleted a qty = 1 card when decrementing by 1 when it should return 1: row deletion"
-    test_card = [card for card in get_deck_cards(db_with_cards, deck_id) if card["product_id"] == 521514 and card["zone"] == "maindeck"]
+    assert return_value == 1, (
+        "this has not deleted a qty = 1 card when decrementing by 1 when it should return 1: row deletion"
+    )
+    test_card = [
+        card
+        for card in get_deck_cards(db_with_cards, deck_id)
+        if card["product_id"] == 521514 and card["zone"] == "maindeck"
+    ]
     assert not test_card, "test card should be empty"
 
 
@@ -210,6 +261,7 @@ def test_delete_deck_with_cards(db_with_cards):
     assert not return_value_deck, "deck_id should not exist anymore after delete_deck is called"
     assert not return_value_cards, "Cards should be deleted for the deck_id that was deleted"
 
+
 def test_delete_deck_non_existent(db_with_cards):
     return_value = delete_deck(db_with_cards, 999)
     assert return_value == 0, "no rows should be returned as no deck existed to have rows deleted from"
@@ -221,8 +273,9 @@ def test_delete_deck_other_deck_untouched(db_with_cards):
     deck_two_id = all_decks[1]["deck_id"]
     deck_two_cards = get_deck_cards(db_with_cards, deck_two_id)
     delete_deck(db_with_cards, deck_one_id)
-    assert deck_two_cards == get_deck_cards(db_with_cards, deck_two_id), "content should be untouched and they should be equal as deck one was deleted not deck two"
-
+    assert deck_two_cards == get_deck_cards(db_with_cards, deck_two_id), (
+        "content should be untouched and they should be equal as deck one was deleted not deck two"
+    )
 
 
 def test_get_cards_no_filters(db_with_cards):
@@ -231,34 +284,40 @@ def test_get_cards_no_filters(db_with_cards):
     result_ids = {card["product_id"] for card in cards}
     assert result_ids == {521503, 521514, 521530, 521540}, "returned card ids should match test data"
 
-@pytest.mark.parametrize("filters, expected_ids", [
-    ({"element": "Water"}, {521503, 521540}),
-    ({"rarity": "Ordinary"}, {521503, 521540}),
-    ({"cost": "5"}, {521530}),
-    ({"element": "Fire"}, {521530}),
-    ({"group_id": 100}, {521503, 521514, 521530, 521540}),
-    ({"power_rating": 3}, {521514}),
-    ({"foil": True}, {521540}),
-    ({"foil": False}, {521503, 521514, 521530}),
-    ({"element": "Earth"}, set()),
-])
+
+@pytest.mark.parametrize(
+    "filters, expected_ids",
+    [
+        ({"element": "Water"}, {521503, 521540}),
+        ({"rarity": "Ordinary"}, {521503, 521540}),
+        ({"cost": "5"}, {521530}),
+        ({"element": "Fire"}, {521530}),
+        ({"group_id": 100}, {521503, 521514, 521530, 521540}),
+        ({"power_rating": 3}, {521514}),
+        ({"foil": True}, {521540}),
+        ({"foil": False}, {521503, 521514, 521530}),
+        ({"element": "Earth"}, set()),
+    ],
+)
 def test_get_cards_single_filter(db_with_cards, filters, expected_ids):
     results = get_cards(db_with_cards, **filters)
     result_ids = {card["product_id"] for card in results}
     assert result_ids == expected_ids
 
 
-@pytest.mark.parametrize("filters, expected_ids", [
-    ({"element": "Water", "rarity": "Ordinary"}, {521503, 521540}),
-    ({"rarity": "Exceptional", "cost": "5"}, {521530}),
-    ({"cost": "5", "element": "Fire"}, {521530}),
-    ({"defense_power": 5, "card_type": "Minion"}, {521530}),
-])
+@pytest.mark.parametrize(
+    "filters, expected_ids",
+    [
+        ({"element": "Water", "rarity": "Ordinary"}, {521503, 521540}),
+        ({"rarity": "Exceptional", "cost": "5"}, {521530}),
+        ({"cost": "5", "element": "Fire"}, {521530}),
+        ({"defense_power": 5, "card_type": "Minion"}, {521530}),
+    ],
+)
 def test_get_cards_multiple_filters(db_with_cards, filters, expected_ids):
     results = get_cards(db_with_cards, **filters)
     result_ids = {card["product_id"] for card in results}
     assert result_ids == expected_ids
-
 
 
 def test_get_prices_no_filter(db_with_cards):
@@ -271,38 +330,82 @@ def test_get_prices_no_filter(db_with_cards):
 @pytest.mark.parametrize("product_id, expected_market_price", [(521503, 0.08), (521540, 0.75)])
 def test_get_prices_single_filter(db_with_cards, product_id, expected_market_price):
     prices = get_prices(db_with_cards, product_id)
-    #result_ids = {price["product_id"] for price in prices}
-    #assert result_ids == {product_id}, "returned card ids should match test data"
+    # result_ids = {price["product_id"] for price in prices}
+    # assert result_ids == {product_id}, "returned card ids should match test data"
     assert prices[0]["product_id"] == product_id, "returned card ids should match test data"
     assert prices[0]["market_price"] == expected_market_price, "price should match expected"
 
 
-@pytest.mark.parametrize("date_from, date_to, expected_dates", [
-    ("2026-01-01", "2026-04-01", {"2026-01-05", "2026-03-19"}),
-    ("2026-01-01", "2026-02-01", {"2026-01-05"}),
-    ("2025-01-01", "2025-12-30", {"2025-11-27", "2025-12-19"})
-    ])
+@pytest.mark.parametrize(
+    "date_from, date_to, expected_dates",
+    [
+        ("2026-01-01", "2026-04-01", {"2026-01-05", "2026-03-19"}),
+        ("2026-01-01", "2026-02-01", {"2026-01-05"}),
+        ("2025-01-01", "2025-12-30", {"2025-11-27", "2025-12-19"}),
+    ],
+)
 def test_get_prices_date_filtered(db_with_cards, date_from, date_to, expected_dates):
     price_history = [
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.10, "midPrice": 0.20, "highPrice": 0.30, "marketPrice": 0.15, "dateFetched":"2026-03-19"},
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.50, "midPrice": 1.00, "highPrice": 2.00, "marketPrice": 0.75, "dateFetched":"2025-12-19"},
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 1.50, "midPrice": 2.50, "highPrice": 4.00, "marketPrice": 2.00, "dateFetched":"2025-11-27"},
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50, "dateFetched":"2026-01-05"},
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 0.10,
+            "midPrice": 0.20,
+            "highPrice": 0.30,
+            "marketPrice": 0.15,
+            "dateFetched": "2026-03-19",
+        },
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 0.50,
+            "midPrice": 1.00,
+            "highPrice": 2.00,
+            "marketPrice": 0.75,
+            "dateFetched": "2025-12-19",
+        },
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 1.50,
+            "midPrice": 2.50,
+            "highPrice": 4.00,
+            "marketPrice": 2.00,
+            "dateFetched": "2025-11-27",
+        },
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 5.00,
+            "midPrice": 8.00,
+            "highPrice": 12.00,
+            "marketPrice": 7.50,
+            "dateFetched": "2026-01-05",
+        },
     ]
     for price in price_history:
-        db_with_cards.execute("""
+        db_with_cards.execute(
+            """
             INSERT OR IGNORE INTO prices (
                 product_id, sub_type_name, low_price, mid_price,
                 high_price, market_price, date_fetched
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            price["productId"], price["subTypeName"], price["lowPrice"],
-            price["midPrice"], price["highPrice"], price["marketPrice"], price["dateFetched"],
-        ))
+        """,
+            (
+                price["productId"],
+                price["subTypeName"],
+                price["lowPrice"],
+                price["midPrice"],
+                price["highPrice"],
+                price["marketPrice"],
+                price["dateFetched"],
+            ),
+        )
 
     dates = {price_info["date_fetched"] for price_info in get_prices(db_with_cards, None, date_from, date_to)}
 
     assert dates == expected_dates, "dates should match expectation"
+
 
 def test_get_prices_no_info(db_with_cards):
     assert not get_prices(db_with_cards, 99999), "product_id with no price history saved should return empty list []"
@@ -310,25 +413,76 @@ def test_get_prices_no_info(db_with_cards):
 
 def test_get_latest_price(db_with_cards):
     price_history = [
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.10, "midPrice": 0.20, "highPrice": 0.30, "marketPrice": 0.15, "dateFetched":"2026-03-19"},
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.50, "midPrice": 1.00, "highPrice": 2.00, "marketPrice": 0.75, "dateFetched":"2025-12-19"},
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 1.50, "midPrice": 2.50, "highPrice": 4.00, "marketPrice": 2.00, "dateFetched":"2025-11-27"},
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50, "dateFetched":"2026-01-05"},
-    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50, "dateFetched":"9999-04-19"}
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 0.10,
+            "midPrice": 0.20,
+            "highPrice": 0.30,
+            "marketPrice": 0.15,
+            "dateFetched": "2026-03-19",
+        },
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 0.50,
+            "midPrice": 1.00,
+            "highPrice": 2.00,
+            "marketPrice": 0.75,
+            "dateFetched": "2025-12-19",
+        },
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 1.50,
+            "midPrice": 2.50,
+            "highPrice": 4.00,
+            "marketPrice": 2.00,
+            "dateFetched": "2025-11-27",
+        },
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 5.00,
+            "midPrice": 8.00,
+            "highPrice": 12.00,
+            "marketPrice": 7.50,
+            "dateFetched": "2026-01-05",
+        },
+        {
+            "productId": 521503,
+            "subTypeName": "Normal",
+            "lowPrice": 5.00,
+            "midPrice": 8.00,
+            "highPrice": 12.00,
+            "marketPrice": 7.50,
+            "dateFetched": "9999-04-19",
+        },
     ]
     for price in price_history:
-        db_with_cards.execute("""
+        db_with_cards.execute(
+            """
             INSERT OR IGNORE INTO prices (
                 product_id, sub_type_name, low_price, mid_price,
                 high_price, market_price, date_fetched
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            price["productId"], price["subTypeName"], price["lowPrice"],
-            price["midPrice"], price["highPrice"], price["marketPrice"], price["dateFetched"],
-        ))
+        """,
+            (
+                price["productId"],
+                price["subTypeName"],
+                price["lowPrice"],
+                price["midPrice"],
+                price["highPrice"],
+                price["marketPrice"],
+                price["dateFetched"],
+            ),
+        )
     latest_info = get_latest_price(db_with_cards, 521503)
     assert latest_info is not None, "a dictionary of price info for the latest date should be returned"
-    assert "9999-04-19" == latest_info.get("date_fetched"), "the latest date for product_id price history should be returned"
+    assert latest_info.get("date_fetched") == "9999-04-19", (
+        "the latest date for product_id price history should be returned"
+    )
+
 
 def test_get_latest_price_no_info(db_with_cards):
     assert not get_latest_price(db_with_cards, 999999)

@@ -1,10 +1,11 @@
-from contextlib import contextmanager
-from collections.abc import Generator
 import sqlite3
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 
+
 @contextmanager
-def get_db_connection(data_path: str) -> Generator[sqlite3.Connection, None, None]:
+def get_db_connection(data_path: str) -> Generator[sqlite3.Connection]:
     Path(data_path).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(data_path)
     conn.row_factory = sqlite3.Row
@@ -16,6 +17,7 @@ def get_db_connection(data_path: str) -> Generator[sqlite3.Connection, None, Non
         raise
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     with get_db_connection("temporary/test.db") as conn:

@@ -1,5 +1,6 @@
-import requests
 import json
+
+import requests
 
 # Category ID for Sorcery: Contested Realm on TCGPlayer/TCGCSV.
 # Stored as a constant — if it ever changes, update it in one place only.
@@ -44,7 +45,7 @@ def get_prices(group_id):
 if __name__ == "__main__":
     ALPHA_GROUP_ID = 23335
     products = get_products(ALPHA_GROUP_ID)
-    
+
     # Dictionary comprehension flattens extendedData list into {name: value}
     # so attributes can be looked up by name rather than searching the list.
     for card in products:

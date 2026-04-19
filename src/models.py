@@ -1,4 +1,12 @@
-from database import save_deck, add_card_to_deck, remove_card_from_deck, get_deck_cards, get_deck, delete_deck, decrement_card_in_deck
+from database import (
+    add_card_to_deck,
+    decrement_card_in_deck,
+    delete_deck,
+    get_deck,
+    get_deck_cards,
+    remove_card_from_deck,
+    save_deck,
+)
 
 
 class Deck:
@@ -10,20 +18,20 @@ class Deck:
     - collection: any card type (maximum 10 cards)
     - avatar: starting avatar (1 card)
     - maybeboard: cards being considered for the deck
-    
+
     self.cards stores {(product_id, zone): quantity} so the same card
     can appear in multiple zones (e.g. maindeck and collection).
     """
 
-    def __init__(self, name=None, deck_id=None):
+    def __init__(self, name: str | None = None, deck_id: int | None = None) -> None:
         # name is optional — load() will populate it when loading by deck_id
         self.name = name
         # deck_id is None until save() is called for the first time
         self.deck_id = deck_id
         # Tuple key {(product_id, zone): quantity} — supports same card in multiple zones
-        self.cards = {}
+        self.cards:dict[tuple[int,str], int] = {}
 
-    def add_card(self, product_id, zone, quantity=1):
+    def add_card(self, product_id: int, zone: str, quantity:int = 1) -> None:
         """
         Adds a card to the deck in the specified zone.
         If the deck hasn't been saved yet, saves it first to get a deck_id.
@@ -43,14 +51,14 @@ class Deck:
         else:
             self.cards[key] = quantity
 
-    def remove_card(self, product_id, zone):
+    def remove_card(self, product_id: int, zone: str) -> None:
         """
         Removes a card entirely from the specified zone.
         Updates both the database and in-memory state.
         """
         if self.deck_id is None:
             self.save()
-        
+
         remove_card_from_deck(self.deck_id, product_id, zone)
 
         # Remove from in-memory state if present
@@ -58,10 +66,10 @@ class Deck:
         if key in self.cards:
             del self.cards[key]
 
-    def decrement_card(self, product_id, zone, quantity = 1):
+    def decrement_card(self, product_id: int, zone: str, quantity: int = 1) -> None:
         if self.deck_id is None:
             self.save()
-        
+
         decrement_card_in_deck(self.deck_id, product_id, zone, quantity)
 
         key = (product_id, zone)
@@ -71,7 +79,7 @@ class Deck:
             else:
                 self.cards[key] -= quantity
 
-    def save(self):
+    def save(self) -> None:
         """
         Saves the deck to the database if it hasn't been saved yet.
         Stores the returned AUTOINCREMENT id in self.deck_id for future use.
@@ -79,7 +87,7 @@ class Deck:
         if self.deck_id is None:
             self.deck_id = save_deck(self)
 
-    def load(self):
+    def load(self) -> None:
         """
         Loads deck name and card list from the database into memory.
         Populates self.name from the decks table.
@@ -88,25 +96,26 @@ class Deck:
         # Fetch deck metadata (name, created_at)
         deck_info = get_deck(self.deck_id)
         if deck_info:
-            self.name = deck_info['name']
+            self.name = deck_info["name"]
 
         # Fetch all cards in this deck and rebuild the in-memory dict
         deck_cards = get_deck_cards(self.deck_id)
         for product_id, quantity, zone in deck_cards:
             self.cards[(product_id, zone)] = quantity
 
-    def delete(self):
+    def delete(self) -> None:
         delete_deck(self.deck_id)
 
 
 if __name__ == "__main__":
     from database import create_tables
+
     create_tables()
 
     deck = Deck(name="Test Water Deck")
-    deck.add_card(521503, "maindeck")   # Accursed Albatross
-    deck.add_card(521503, "collection") # Same card, different zone
-    deck.add_card(521514, "maindeck")   # Adept Illusionist
+    deck.add_card(521503, "maindeck")  # Accursed Albatross
+    deck.add_card(521503, "collection")  # Same card, different zone
+    deck.add_card(521514, "maindeck")  # Adept Illusionist
 
     print(f"Deck ID: {deck.deck_id}")
     print(f"Cards in memory: {deck.cards}")

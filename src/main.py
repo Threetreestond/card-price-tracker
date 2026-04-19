@@ -1,5 +1,6 @@
 import argparse
-from database import create_tables, get_cards, get_prices, get_cards_by_ids
+
+from database import create_tables, get_cards, get_cards_by_ids, get_prices
 from models import Deck
 from sync import sync_cards, sync_prices
 
@@ -8,7 +9,7 @@ def main():
     """
     Entry point for the Sorcery Card Price Tracker CLI.
     Uses argparse subparsers to route commands to the correct handler.
-    
+
     Commands:
       sync              — fetch latest cards and prices from TCGCSV
       cards             — browse and filter cards
@@ -48,7 +49,9 @@ def main():
     deck_parser.add_argument("--name", type=str, help="Deck name for create")
     deck_parser.add_argument("--id", type=int, help="Deck ID for show/add")
     deck_parser.add_argument("--card", type=int, help="Product ID to add")
-    deck_parser.add_argument("--zone", type=str, help="Zone to add card to: maindeck, sitedeck, collection, avatar, maybeboard")
+    deck_parser.add_argument(
+        "--zone", type=str, help="Zone to add card to: maindeck, sitedeck, collection, avatar, maybeboard"
+    )
 
     # Parse the arguments from the command line
     args = parser.parse_args()
@@ -64,13 +67,7 @@ def main():
 
     elif args.command == "cards":
         # Pass all filter args directly — None values are ignored by get_cards()
-        cards = get_cards(
-            element=args.element,
-            card_type=args.type,
-            cost=args.cost,
-            rarity=args.rarity,
-            foil=args.foil
-        )
+        cards = get_cards(element=args.element, card_type=args.type, cost=args.cost, rarity=args.rarity, foil=args.foil)
         print(f"Found {len(cards)} cards\n")
         # :<40 left-aligns the value in a 40-character wide field for column alignment
         for card in cards:
@@ -88,7 +85,6 @@ def main():
             )
 
     elif args.command == "deck":
-
         if args.action == "create":
             # Create a new Deck object and save it to get a deck_id
             deck = Deck(name=args.name)
@@ -105,8 +101,7 @@ def main():
             # deck.cards.keys() returns (product_id, zone) tuples — we extract just
             # the product_ids for the lookup, then build a {product_id: card} dict.
             card_lookup = {
-                card['product_id']: card
-                for card in get_cards_by_ids([pid for pid, zone in deck.cards.keys()])
+                card["product_id"]: card for card in get_cards_by_ids([pid for pid, zone in deck])
             }
             # Unpack the tuple key into product_id and zone for display
             for (product_id, zone), quantity in deck.cards.items():

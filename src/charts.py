@@ -1,9 +1,12 @@
 import matplotlib.pyplot as plt
+
 from database import get_cards_by_ids
+
 
 def get_deck_card_data(deck, zone=None):
     # get all product_ids from the deck
-    # could have used list comprehension: valid_ids = [(pid, qty) for (pid, czone), qty in deck.cards.items() if zone is None or czone == zone]
+    # could have used list comprehension: 
+    # valid_ids = [(pid, qty) for (pid, czone), qty in deck.cards.items() if zone is None or czone == zone]
     valid_ids = []
     for (product_id, card_zone), quantity in deck.cards.items():
         # optionally filter by zone
@@ -16,16 +19,17 @@ def get_deck_card_data(deck, zone=None):
     # list comprehension to extract just product_ids and make a list of them
     pid_list = [pid for pid, qty in valid_ids]
     # fetch full card data using get_cards_by_ids
-    card_lookup = {card['product_id']: card for card in get_cards_by_ids(pid_list)}
+    card_lookup = {card["product_id"]: card for card in get_cards_by_ids(pid_list)}
     # return a list of (card, quantity) tuples
     return [(card_lookup[pid], qty) for pid, qty in valid_ids]
+
 
 def mana_curve(deck, zone="maindeck"):
     deck_info = get_deck_card_data(deck, zone)
     cost_counts = {str(i): 0 for i in range(11)}
     for card, qty in deck_info:
-        if card['cost'] in cost_counts:
-            cost_counts[card['cost']] += qty
+        if card["cost"] in cost_counts:
+            cost_counts[card["cost"]] += qty
     plt.bar(list(cost_counts.keys()), list(cost_counts.values()))
     plt.xlabel("Cost")
     plt.ylabel("Quantity")
@@ -33,12 +37,13 @@ def mana_curve(deck, zone="maindeck"):
     plt.show()
     return
 
+
 def element_distribution(deck, zone="maindeck"):
     deck_info = get_deck_card_data(deck, zone)
-    element_types = {"Fire" : 0, "Water" : 0, "Earth" : 0, "Air" : 0, "None" : 0 }
+    element_types = {"Fire": 0, "Water": 0, "Earth": 0, "Air": 0, "None": 0}
     for card, qty in deck_info:
-        if card['element'] is not None:
-            card_elements = card['element'].split(";")
+        if card["element"] is not None:
+            card_elements = card["element"].split(";")
             for element in card_elements:
                 element_types[element] += qty
         else:
@@ -47,12 +52,13 @@ def element_distribution(deck, zone="maindeck"):
     plt.pie(list(data_show.values()), labels=list(data_show.keys()))
     plt.show()
 
+
 def card_type_distribution(deck, zone=None):
     deck_info = get_deck_card_data(deck, zone)
-    card_types_counter = {"Artifact" : 0, "Aura" : 0, "Site" : 0, "Magic" : 0, "Avatar" : 0, "Minion" : 0, "None": 0 }
+    card_types_counter = {"Artifact": 0, "Aura": 0, "Site": 0, "Magic": 0, "Avatar": 0, "Minion": 0, "None": 0}
     for card, qty in deck_info:
-        if card['card_type'] is not None:
-            card_types = card['card_type'].split(";")
+        if card["card_type"] is not None:
+            card_types = card["card_type"].split(";")
             for card_type in card_types:
                 card_types_counter[card_type] += qty
         else:
@@ -65,12 +71,13 @@ def card_type_distribution(deck, zone=None):
 if __name__ == "__main__":
     from database import create_tables
     from models import Deck
+
     create_tables()
 
     deck = Deck(deck_id=1)
     deck.load()
 
-    data = get_deck_card_data(deck, zone='maindeck')
+    data = get_deck_card_data(deck, zone="maindeck")
     for card, quantity in data:
         print(f"{card['name']} x{quantity}")
 
