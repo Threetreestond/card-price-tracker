@@ -1,7 +1,12 @@
+from __future__ import annotations
 import sqlite3
 from datetime import date
 from context_manager import get_db_connection
-from models import Deck
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models import Deck
+    
 # Path to the SQLite database file. Defined once here so all functions
 # use the same location — change this in one place if the path moves.
 DB_PATH = "data/cards.db"

@@ -106,7 +106,7 @@ TEST_CARDS = [
 
 TEST_PRICES = [
     {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.05, "midPrice": 0.10, "highPrice": 0.25, "marketPrice": 0.08},
-    {"productId": 521503, "subTypeName": "Foil", "lowPrice": 0.50, "midPrice": 1.00, "highPrice": 2.00, "marketPrice": 0.75},
+    {"productId": 521540, "subTypeName": "Foil", "lowPrice": 0.50, "midPrice": 1.00, "highPrice": 2.00, "marketPrice": 0.75},
     {"productId": 521514, "subTypeName": "Normal", "lowPrice": 1.50, "midPrice": 2.50, "highPrice": 4.00, "marketPrice": 2.00},
     {"productId": 521530, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50},
 ]
@@ -264,5 +264,71 @@ def test_get_cards_multiple_filters(db_with_cards, filters, expected_ids):
 def test_get_prices_no_filter(db_with_cards):
     prices = get_prices(db_with_cards)
     assert len(prices) == 4, "there are 4 cards with prices in the database, all should return with no filters"
-    result_ids = {prices[0]["product_id"] for price in prices}
+    result_ids = {price["product_id"] for price in prices}
     assert result_ids == {521503, 521514, 521530, 521540}, "returned card ids should match test data"
+
+
+@pytest.mark.parametrize("product_id, expected_market_price", [(521503, 0.08), (521540, 0.75)])
+def test_get_prices_single_filter(db_with_cards, product_id, expected_market_price):
+    prices = get_prices(db_with_cards, product_id)
+    #result_ids = {price["product_id"] for price in prices}
+    #assert result_ids == {product_id}, "returned card ids should match test data"
+    assert prices[0]["product_id"] == product_id, "returned card ids should match test data"
+    assert prices[0]["market_price"] == expected_market_price, "price should match expected"
+
+
+@pytest.mark.parametrize("date_from, date_to, expected_dates", [
+    ("2026-01-01", "2026-04-01", {"2026-01-05", "2026-03-19"}),
+    ("2026-01-01", "2026-02-01", {"2026-01-05"}),
+    ("2025-01-01", "2025-12-30", {"2025-11-27", "2025-12-19"})
+    ])
+def test_get_prices_date_filtered(db_with_cards, date_from, date_to, expected_dates):
+    price_history = [
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.10, "midPrice": 0.20, "highPrice": 0.30, "marketPrice": 0.15, "dateFetched":"2026-03-19"},
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.50, "midPrice": 1.00, "highPrice": 2.00, "marketPrice": 0.75, "dateFetched":"2025-12-19"},
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 1.50, "midPrice": 2.50, "highPrice": 4.00, "marketPrice": 2.00, "dateFetched":"2025-11-27"},
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50, "dateFetched":"2026-01-05"},
+    ]
+    for price in price_history:
+        db_with_cards.execute("""
+            INSERT OR IGNORE INTO prices (
+                product_id, sub_type_name, low_price, mid_price,
+                high_price, market_price, date_fetched
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            price["productId"], price["subTypeName"], price["lowPrice"],
+            price["midPrice"], price["highPrice"], price["marketPrice"], price["dateFetched"],
+        ))
+
+    dates = {price_info["date_fetched"] for price_info in get_prices(db_with_cards, None, date_from, date_to)}
+
+    assert dates == expected_dates, "dates should match expectation"
+
+def test_get_prices_no_info(db_with_cards):
+    assert not get_prices(db_with_cards, 99999), "product_id with no price history saved should return empty list []"
+
+
+def test_get_latest_price(db_with_cards):
+    price_history = [
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.10, "midPrice": 0.20, "highPrice": 0.30, "marketPrice": 0.15, "dateFetched":"2026-03-19"},
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 0.50, "midPrice": 1.00, "highPrice": 2.00, "marketPrice": 0.75, "dateFetched":"2025-12-19"},
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 1.50, "midPrice": 2.50, "highPrice": 4.00, "marketPrice": 2.00, "dateFetched":"2025-11-27"},
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50, "dateFetched":"2026-01-05"},
+    {"productId": 521503, "subTypeName": "Normal", "lowPrice": 5.00, "midPrice": 8.00, "highPrice": 12.00, "marketPrice": 7.50, "dateFetched":"9999-04-19"}
+    ]
+    for price in price_history:
+        db_with_cards.execute("""
+            INSERT OR IGNORE INTO prices (
+                product_id, sub_type_name, low_price, mid_price,
+                high_price, market_price, date_fetched
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            price["productId"], price["subTypeName"], price["lowPrice"],
+            price["midPrice"], price["highPrice"], price["marketPrice"], price["dateFetched"],
+        ))
+    latest_info = get_latest_price(db_with_cards, 521503)
+    assert latest_info is not None, "a dictionary of price info for the latest date should be returned"
+    assert "9999-04-19" == latest_info.get("date_fetched"), "the latest date for product_id price history should be returned"
+
+def test_get_latest_price_no_info(db_with_cards):
+    assert not get_latest_price(db_with_cards, 999999)
