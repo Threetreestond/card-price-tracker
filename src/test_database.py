@@ -1,6 +1,6 @@
 import pytest
 from context_manager import get_db_connection
-from database import create_tables, save_deck, get_deck, decrement_card_in_deck, get_cards, delete_deck, add_card_to_deck, save_cards, save_prices, get_all_decks, get_deck_cards
+from database import create_tables, save_deck, get_deck, decrement_card_in_deck, get_cards, delete_deck, add_card_to_deck, save_cards, save_prices, get_all_decks, get_deck_cards, get_prices, get_latest_price
 from models import Deck
 
 
@@ -144,6 +144,7 @@ def test_save_deck(db_conn):
     deck = Deck(name="Test Name")
     deck.deck_id = save_deck(db_conn, deck)
     result = get_deck(db_conn, deck.deck_id) 
+    assert result is not None, "a deck should have been saved"
     assert result["name"] == deck.name, "Deck name should match what was saved"
 
 
@@ -158,14 +159,16 @@ def test_save_deck_preserves_name(db_conn, deck_name):
     # same body as your existing test, but using deck_name
     deck = Deck(name=deck_name)
     deck.deck_id = save_deck(db_conn, deck)
-    result = get_deck(db_conn, deck.deck_id) 
+    result = get_deck(db_conn, deck.deck_id)
+    assert result is not None, "a deck should have been retrieved"
     assert result["name"] == deck.name, "Deck name should match what was saved"
 
 
 def test_save_deck_empty_name(db_conn):
     deck = Deck(name="")
     deck.deck_id = save_deck(db_conn, deck)
-    result = get_deck(db_conn, deck.deck_id) 
+    result = get_deck(db_conn, deck.deck_id)
+    assert result is not None, "a deck should have been retrieved"
     assert result["name"] == deck.name, "Deck name should match what was saved"
 
 
@@ -177,7 +180,8 @@ def test_save_deck_duplicate_name(db_conn):
     
     deck_two = Deck(name="Duplicate Name")
     deck_two.deck_id = save_deck(db_conn, deck_two)
-    result_two = get_deck(db_conn, deck_two.deck_id) 
+    result_two = get_deck(db_conn, deck_two.deck_id)
+    assert result_one is not None and result_two is not None, "both decks should be retrieved succesfully"
     assert result_one["deck_id"] != result_two["deck_id"], "Deck ids should be different"
 
 def test_decrement_card_in_deck_quantity_remains(db_with_cards):
@@ -221,7 +225,7 @@ def test_delete_deck_other_deck_untouched(db_with_cards):
 
 
 
-def test_get_cards_no_parameters(db_with_cards):
+def test_get_cards_no_filters(db_with_cards):
     cards = get_cards(db_with_cards)
     assert len(cards) == 4, "there are 4 cards in the database, all should return with no filters"
     result_ids = {card["product_id"] for card in cards}
@@ -254,3 +258,11 @@ def test_get_cards_multiple_filters(db_with_cards, filters, expected_ids):
     results = get_cards(db_with_cards, **filters)
     result_ids = {card["product_id"] for card in results}
     assert result_ids == expected_ids
+
+
+
+def test_get_prices_no_filter(db_with_cards):
+    prices = get_prices(db_with_cards)
+    assert len(prices) == 4, "there are 4 cards with prices in the database, all should return with no filters"
+    result_ids = {prices[0]["product_id"] for price in prices}
+    assert result_ids == {521503, 521514, 521530, 521540}, "returned card ids should match test data"
