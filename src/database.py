@@ -1,13 +1,13 @@
 import sqlite3
-import os
 from datetime import date
 from context_manager import get_db_connection
+from models import Deck
 # Path to the SQLite database file. Defined once here so all functions
 # use the same location — change this in one place if the path moves.
 DB_PATH = "data/cards.db"
 
 
-def create_tables(conn):
+def create_tables(conn: sqlite3.Connection) -> None:
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cards (
@@ -63,7 +63,7 @@ def create_tables(conn):
         )
     """)
 
-def save_cards(conn, card):
+def save_cards(conn: sqlite3.Connection, card: dict) -> None:
     ext = {d["name"]: d["value"] for d in card["extendedData"]}
     is_foil = '(Foil)' in card["name"]
     foil_int = 1 if is_foil else 0
@@ -85,7 +85,7 @@ def save_cards(conn, card):
     ))
 
 
-def save_prices(conn, price):
+def save_prices(conn: sqlite3.Connection, price: dict) -> None:
     today = str(date.today())
     conn.execute("""
         INSERT OR IGNORE INTO prices (
@@ -98,13 +98,13 @@ def save_prices(conn, price):
     ))
 
 
-def save_deck(conn, deck):
+def save_deck(conn: sqlite3.Connection, deck: Deck) -> int | None:
     today = str(date.today())
     deck_id = conn.execute("INSERT INTO decks (name, created_at) VALUES (?, ?)", (deck.name, today)).lastrowid
     return deck_id
 
 
-def get_all_decks(conn):
+def get_all_decks(conn: sqlite3.Connection) -> list[dict]:
     """
     Returns all decks with their avatar card image if one exists.
     Joins deck_cards → cards to find the avatar zone card for each deck.
@@ -129,7 +129,7 @@ def get_all_decks(conn):
     return decks
 
 
-def add_card_to_deck(conn, deck_id, product_id, zone, quantity=1):
+def add_card_to_deck(conn: sqlite3.Connection, deck_id: int | None, product_id: int, zone: str, quantity: int = 1) -> int:
     added_card = conn.execute("""
         INSERT INTO deck_cards (deck_id, product_id, zone, quantity)
         VALUES (?, ?, ?, ?)
@@ -138,34 +138,35 @@ def add_card_to_deck(conn, deck_id, product_id, zone, quantity=1):
     """, (deck_id, product_id, zone, quantity, quantity)).rowcount
     return added_card
 
-def remove_card_from_deck(conn, deck_id, product_id, zone):
+def remove_card_from_deck(conn: sqlite3.Connection, deck_id: int, product_id: int, zone: str) -> int:
     return conn.execute("DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ?", (deck_id, product_id, zone)).rowcount
 
-def decrement_card_in_deck(conn, deck_id, product_id, zone, quantity=1):
+def decrement_card_in_deck(conn: sqlite3.Connection, deck_id: int | None, product_id: int, zone: str, quantity: int = 1) -> int:
     """Returns 1 if the card was removed entirely, 0 if it was decremented-but-survived OR if it was never in the deck to begin with."""
     conn.execute("UPDATE deck_cards SET quantity = quantity - ? WHERE deck_id = ? AND product_id = ? AND zone = ?", (quantity, deck_id, product_id, zone))
     removed = conn.execute("DELETE FROM deck_cards WHERE deck_id = ? AND product_id = ? AND zone = ? AND quantity <= 0", (deck_id, product_id, zone)).rowcount
     return removed
 
-def get_deck_cards(conn, deck_id):
+def get_deck_cards(conn: sqlite3.Connection, deck_id: int) -> list[sqlite3.Row]:
     return conn.execute("SELECT product_id, quantity, zone FROM deck_cards WHERE deck_id = ?", (deck_id,)).fetchall()
 
 
-def get_deck(conn, deck_id):
+def get_deck(conn: sqlite3.Connection, deck_id: int | None) -> sqlite3.Row | None:
     return conn.execute("SELECT * FROM decks WHERE deck_id = ?", (deck_id,)).fetchone()
 
-def get_card_count(conn):
+def get_card_count(conn: sqlite3.Connection) -> int:
     return conn.execute("SELECT COUNT(*) FROM cards").fetchone()[0]
 
-def get_cards(conn, group_id=None, card_type=None, element=None, cost=None,
-              rarity=None, threshold=None, card_category=None,
-              power_rating=None, defense_power=None, foil=None, product_id=None):
+def get_cards(conn: sqlite3.Connection, group_id: int | None = None, card_type: str | None = None, element: str| None = None, cost: str | None = None,
+              rarity: str | None = None, threshold: str | None = None, card_category: str | None = None,
+              power_rating: int | None = None, defense_power: int | None = None, foil: bool | None = None, product_id: int | None = None) -> list[sqlite3.Row]:
     """
     Flexible card query with optional filters.
     Base filter excludes sealed products (card_type IS NOT NULL).
     """
+    foiled: int | None = None
     if foil is not None:
-        foil = 1 if foil else 0
+        foiled = 1 if foil else 0
     query = "SELECT * FROM cards WHERE card_type IS NOT NULL"
     params = []
     filters = [
@@ -178,7 +179,7 @@ def get_cards(conn, group_id=None, card_type=None, element=None, cost=None,
         ("card_category = ?",   card_category),
         ("power_rating = ?",   power_rating),
         ("defense_power = ?",   defense_power),
-        ("foil = ?",   foil),
+        ("foil = ?",   foiled),
         ("product_id = ?",   product_id)
     ]
 
@@ -189,7 +190,7 @@ def get_cards(conn, group_id=None, card_type=None, element=None, cost=None,
     query += " ORDER BY name ASC"
     return conn.execute(query, params).fetchall()
 
-def get_cards_by_ids(conn, product_ids):
+def get_cards_by_ids(conn: sqlite3.Connection, product_ids: list[int]) -> list[sqlite3.Row]:
     if not product_ids:
         return []
     placeholders = ",".join("?" * len(product_ids))
@@ -216,7 +217,7 @@ def get_prices(conn: sqlite3.Connection, product_id: int | None = None, date_fro
     return conn.execute(query, params).fetchall()
 
 
-def get_latest_price(conn, product_id):
+def get_latest_price(conn: sqlite3.Connection, product_id: int) -> dict | None:
     """
     Returns the most recent price row for a card.
     Used to show current price alongside card info without fetching full history.
@@ -225,7 +226,7 @@ def get_latest_price(conn, product_id):
     return dict(latest_price) if latest_price else None
 
 
-def delete_deck(conn, deck_id):
+def delete_deck(conn: sqlite3.Connection, deck_id: int) -> int:
     """
     Delete deck and all its cards.
     Need to fix schema with FOREIGN KEY (deck_id) REFERENCES decks(deck_id) ON DELETE CASCADE
@@ -234,7 +235,7 @@ def delete_deck(conn, deck_id):
     return conn.execute("DELETE FROM decks WHERE deck_id = ?", (deck_id,)).rowcount
 
 
-def get_deck_with_cards(conn, deck_id):
+def get_deck_with_cards(conn: sqlite3.Connection, deck_id: int) -> dict:
     """
     Returns deck metadata plus all cards with full details.
     Uses a JOIN to get card attributes alongside zone/quantity from deck_cards.
