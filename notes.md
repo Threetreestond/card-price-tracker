@@ -24,3 +24,8 @@ Stretch A: Add type hints to models.py. This forces you to confront the broken c
 Stretch B: Configure Ruff. pip install ruff, add a [tool.ruff] section to pyproject.toml (or create one), run ruff check src/. Fix whatever it flags. This is 15 minutes of work that pays off permanently — Ruff catches style issues on every future commit.
 
 Stretch C: Replace os.path / os.makedirs with pathlib in context_manager.py. You discussed this during the session but left os.path.dirname in place. Small change, checks a Phase 1 box.
+
+
+# For Phase 2
+
+1. The progression I described regarding dashboard refresh (manual now → Fabric lakehouse → automated pipelines → agentic mapping resolution) maps directly onto Phases 2-4 of the roadmap.

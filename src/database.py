@@ -4,8 +4,6 @@ import sqlite3
 from datetime import date
 from typing import TYPE_CHECKING
 
-from context_manager import get_db_connection
-
 if TYPE_CHECKING:
     from models import Deck
 
@@ -209,11 +207,11 @@ def get_deck_cards(conn: sqlite3.Connection, deck_id: int) -> list[sqlite3.Row]:
 
 
 def get_deck(conn: sqlite3.Connection, deck_id: int | None) -> sqlite3.Row | None:
-    return conn.execute("SELECT * FROM decks WHERE deck_id = ?", (deck_id,)).fetchone()
+    return conn.execute("SELECT * FROM decks WHERE deck_id = ?", (deck_id,)).fetchone() # type: ignore[no-any-return]
 
 
 def get_card_count(conn: sqlite3.Connection) -> int:
-    return conn.execute("SELECT COUNT(*) FROM cards").fetchone()[0]
+    return conn.execute("SELECT COUNT(*) FROM cards").fetchone()[0] # type: ignore[no-any-return]
 
 
 def get_cards(
@@ -373,13 +371,4 @@ def get_deck_with_cards(conn: sqlite3.Connection, deck_id: int) -> dict:
     }
 
 
-if __name__ == "__main__":
-    # caller is policy whereas function is mechanism, the mechanism has no understanding on good or bad
-    # how you define policy judges the mechanism
-    with get_db_connection(DB_PATH) as conn:
-        returned = remove_card_from_deck(conn, 14, 521503, "maindeck")
-        print(returned)
-        if returned > 0:
-            print("Accursed Albatross removed")
-        else:
-            print("No card removed")
+

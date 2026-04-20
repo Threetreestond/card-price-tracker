@@ -1,10 +1,9 @@
 import argparse
 
-from database import create_tables, get_cards, get_cards_by_ids, get_prices
+from database import create_tables, get_cards, get_cards_by_ids, get_prices, DB_PATH
 from models import Deck
 from sync import sync_cards, sync_prices
-
-
+from context_manager import get_db_connection
 def main():
     """
     Entry point for the Sorcery Card Price Tracker CLI.
@@ -57,69 +56,69 @@ def main():
     args = parser.parse_args()
 
     # --- Route to the correct handler ---
+    with get_db_connection(DB_PATH) as conn:
+        create_tables(conn)
+        if args.command == "sync":
+            print("Syncing cards...")
+            sync_cards(conn)
+            print("Syncing prices...")
+            sync_prices(conn)
+            print("Done")
 
-    if args.command == "sync":
-        print("Syncing cards...")
-        sync_cards()
-        print("Syncing prices...")
-        sync_prices()
-        print("Done")
+        elif args.command == "cards":
+            # Pass all filter args directly — None values are ignored by get_cards()
+            cards = get_cards(conn, element=args.element, card_type=args.type, cost=args.cost, rarity=args.rarity, foil=args.foil)
+            print(f"Found {len(cards)} cards\n")
+            # :<40 left-aligns the value in a 40-character wide field for column alignment
+            for card in cards:
+                print(f"{card['name']:<40} {card['rarity']:<15} Cost: {card['cost']:<5} {card['element']}")
 
-    elif args.command == "cards":
-        # Pass all filter args directly — None values are ignored by get_cards()
-        cards = get_cards(element=args.element, card_type=args.type, cost=args.cost, rarity=args.rarity, foil=args.foil)
-        print(f"Found {len(cards)} cards\n")
-        # :<40 left-aligns the value in a 40-character wide field for column alignment
-        for card in cards:
-            print(f"{card['name']:<40} {card['rarity']:<15} Cost: {card['cost']:<5} {card['element']}")
+        elif args.command == "prices":
+            prices = get_prices(conn, product_id=args.product_id)
+            print(f"Found {len(prices)} prices\n")
+            for price in prices:
+                print(
+                    f"Date: {price['date_fetched']}\n"
+                    f"Market Price: {price['market_price']}\n"
+                    f"Low Price: {price['low_price']}\n"
+                    f"High Price: {price['high_price']}\n"
+                )
 
-    elif args.command == "prices":
-        prices = get_prices(product_id=args.product_id)
-        print(f"Found {len(prices)} prices\n")
-        for price in prices:
-            print(
-                f"Date: {price['date_fetched']}\n"
-                f"Market Price: {price['market_price']}\n"
-                f"Low Price: {price['low_price']}\n"
-                f"High Price: {price['high_price']}\n"
-            )
+        elif args.command == "deck":
+            if args.action == "create":
+                # Create a new Deck object and save it to get a deck_id
+                deck = Deck(name=args.name)
+                deck.save(conn)
+                print(f"Created deck '{deck.name}' with ID: '{deck.deck_id}'")
 
-    elif args.command == "deck":
-        if args.action == "create":
-            # Create a new Deck object and save it to get a deck_id
-            deck = Deck(name=args.name)
-            deck.save()
-            print(f"Created deck '{deck.name}' with ID: '{deck.deck_id}'")
+            elif args.action == "show":
+                # Load deck by ID — load() populates both name and cards from the database
+                deck = Deck(deck_id=args.id)
+                deck.load(conn)
+                print(f"Deck '{deck.name}' (ID: {deck.deck_id}) — {len(deck.cards)} cards\n")
 
-        elif args.action == "show":
-            # Load deck by ID — load() populates both name and cards from the database
-            deck = Deck(deck_id=args.id)
-            deck.load()
-            print(f"Deck '{deck.name}' (ID: {deck.deck_id}) — {len(deck.cards)} cards\n")
+                # Fetch all card details in one query using the product_ids from the deck.
+                # deck.cards.keys() returns (product_id, zone) tuples — we extract just
+                # the product_ids for the lookup, then build a {product_id: card} dict.
+                card_lookup = {
+                    card["product_id"]: card for card in get_cards_by_ids(conn, [pid for pid, zone in deck.cards])
+                }
+                # Unpack the tuple key into product_id and zone for display
+                for (product_id, zone), quantity in deck.cards.items():
+                    card = card_lookup[product_id]
+                    print(f"{card['name']:<40} {zone:<12} x{quantity}")
 
-            # Fetch all card details in one query using the product_ids from the deck.
-            # deck.cards.keys() returns (product_id, zone) tuples — we extract just
-            # the product_ids for the lookup, then build a {product_id: card} dict.
-            card_lookup = {
-                card["product_id"]: card for card in get_cards_by_ids([pid for pid, zone in deck])
-            }
-            # Unpack the tuple key into product_id and zone for display
-            for (product_id, zone), quantity in deck.cards.items():
-                card = card_lookup[product_id]
-                print(f"{card['name']:<40} {zone:<12} x{quantity}")
+            elif args.action == "add":
+                # Load existing deck by ID, then add the specified card to the given zone
+                deck = Deck(deck_id=args.id)
+                deck.load(conn)
+                deck.add_card(conn, product_id=args.card, zone=args.zone)
 
-        elif args.action == "add":
-            # Load existing deck by ID, then add the specified card to the given zone
-            deck = Deck(deck_id=args.id)
-            deck.load()
-            deck.add_card(product_id=args.card, zone=args.zone)
-
-    else:
-        # No command provided — show help text
-        parser.print_help()
+        else:
+            # No command provided — show help text
+            parser.print_help()
 
 
 if __name__ == "__main__":
     # Ensure tables exist before any command runs
-    create_tables()
     main()
