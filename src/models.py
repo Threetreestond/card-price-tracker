@@ -11,6 +11,7 @@ from database import (
 )
 from exceptions import DeckError
 
+
 class Deck:
     """
     Represents a Sorcery deck. Handles both in-memory state and

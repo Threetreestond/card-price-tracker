@@ -1,5 +1,8 @@
 
 
 
-class DeckError(Exception): pass
-class CardNotFound(Exception): pass
+class DeckError(Exception): 
+    pass
+
+class CardNotFound(Exception): 
+    pass

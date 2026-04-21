@@ -10,9 +10,9 @@ Run once from the project root:
 Safe to re-run — uses INSERT OR IGNORE so it won't duplicate records.
 """
 
+import os
 import sqlite3
 import sys
-import os
 
 sys.path.insert(0, "src")
 DB_PATH = "data/cards.db"

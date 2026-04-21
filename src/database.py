@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 # Path to the SQLite database file. Defined once here so all functions
 # use the same location — change this in one place if the path moves.
-DB_PATH = "data/cards.db"
+
 
 
 def create_tables(conn: sqlite3.Connection) -> None:

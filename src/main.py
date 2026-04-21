@@ -1,9 +1,12 @@
 import argparse
 
-from database import create_tables, get_cards, get_cards_by_ids, get_prices, DB_PATH
+from config import DB_PATH
+from context_manager import get_db_connection
+from database import create_tables, get_cards, get_cards_by_ids, get_prices
 from models import Deck
 from sync import sync_cards, sync_prices
-from context_manager import get_db_connection
+
+
 def main():
     """
     Entry point for the Sorcery Card Price Tracker CLI.
@@ -67,7 +70,14 @@ def main():
 
         elif args.command == "cards":
             # Pass all filter args directly — None values are ignored by get_cards()
-            cards = get_cards(conn, element=args.element, card_type=args.type, cost=args.cost, rarity=args.rarity, foil=args.foil)
+            cards = get_cards(
+                conn, 
+                element=args.element, 
+                card_type=args.type, 
+                cost=args.cost, 
+                rarity=args.rarity, 
+                foil=args.foil
+                )
             print(f"Found {len(cards)} cards\n")
             # :<40 left-aligns the value in a 40-character wide field for column alignment
             for card in cards:

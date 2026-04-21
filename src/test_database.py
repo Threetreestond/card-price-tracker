@@ -1,5 +1,7 @@
-import pytest
 import sqlite3
+
+import pytest
+
 from context_manager import get_db_connection
 from database import (
     add_card_to_deck,

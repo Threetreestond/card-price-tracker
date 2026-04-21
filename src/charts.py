@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 
-from database import get_cards_by_ids, DB_PATH
+from config import DB_PATH
 from context_manager import get_db_connection
+from database import get_cards_by_ids
 
 
 def get_deck_card_data(deck, zone=None):

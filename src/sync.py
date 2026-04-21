@@ -1,4 +1,5 @@
 import sqlite3
+
 from database import create_tables, save_cards, save_prices
 from fetcher import get_prices, get_products, get_sorcery_groups
 

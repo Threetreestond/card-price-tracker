@@ -1,19 +1,18 @@
-import sys
 import logging
+import sys
 from contextlib import asynccontextmanager
 from datetime import date
 
 sys.path.insert(0, "src")
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from context_manager import get_db_connection
-from database import (
-    get_all_decks, get_cards, get_prices,
-    get_deck_with_cards, get_latest_price, create_tables, DB_PATH
-)
 from pydantic import BaseModel
+
+from config import DB_PATH
+from context_manager import get_db_connection
+from database import create_tables, get_all_decks, get_cards, get_deck_with_cards, get_latest_price, get_prices
 from models import Deck
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
@@ -128,10 +127,10 @@ def import_curiosa_deck_endpoint(body: CuriosaDeckImport) -> dict:
         result = import_curiosa_deck(body.curiosa_url)
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         log.error(f"Curiosa import failed: {e}")
-        raise HTTPException(status_code=502, detail=f"Curiosa import failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Curiosa import failed: {e}") from e
 
 @app.delete("/decks/{deck_id}")
 def delete_deck_endpoint(deck_id: int) -> dict:
