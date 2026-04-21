@@ -9,7 +9,7 @@ from database import (
     remove_card_from_deck,
     save_deck,
 )
-
+from exceptions import DeckError
 
 class Deck:
     """
@@ -59,7 +59,7 @@ class Deck:
         Updates both the database and in-memory state.
         """
         if self.deck_id is None:
-            raise ValueError("Cannot remove a card from an unsaved deck")
+            raise DeckError("Cannot remove a card from an unsaved deck")
         remove_card_from_deck(conn, self.deck_id, product_id, zone)
 
         # Remove from in-memory state if present
@@ -70,7 +70,7 @@ class Deck:
 
     def decrement_card(self, conn: sqlite3.Connection, product_id: int, zone: str, quantity: int = 1) -> None:
         if self.deck_id is None:
-            raise ValueError("Cannot decrement a card from an unsaved deck")
+            raise DeckError("Cannot decrement a card from an unsaved deck")
         decrement_card_in_deck(conn, self.deck_id, product_id, zone, quantity)
 
         key = (product_id, zone)
@@ -95,7 +95,7 @@ class Deck:
         Populates self.cards as {(product_id, zone): quantity} from deck_cards.
         """
         if self.deck_id is None:
-            raise ValueError("Cannot load an unsaved deck ")
+            raise DeckError("Cannot load an unsaved deck ")
         # Fetch deck metadata (name, created_at)
         deck_info = get_deck(conn, self.deck_id)
         if deck_info:
@@ -108,7 +108,7 @@ class Deck:
 
     def delete(self, conn: sqlite3.Connection) -> None:
         if self.deck_id is None:
-            raise ValueError("Cannot delete an unsaved deck")
+            raise DeckError("Cannot delete an unsaved deck")
         delete_deck(conn, self.deck_id)
 
 

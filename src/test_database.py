@@ -1,5 +1,5 @@
 import pytest
-
+import sqlite3
 from context_manager import get_db_connection
 from database import (
     add_card_to_deck,
@@ -161,7 +161,7 @@ def db_conn():
 
 
 @pytest.fixture
-def db_with_cards(db_conn):
+def db_with_cards(db_conn) -> sqlite3.Connection:
     for card in TEST_CARDS:
         save_cards(db_conn, card)
     for price in TEST_PRICES:

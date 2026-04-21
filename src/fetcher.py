@@ -7,7 +7,7 @@ import requests
 SORCERY_CATEGORY_ID = 77
 
 
-def get_sorcery_groups():
+def get_sorcery_groups() -> dict:
     """
     Fetches all Sorcery sets from TCGCSV.
     Returns a list of dicts with keys: groupId, name, abbreviation, publishedOn.
@@ -18,7 +18,7 @@ def get_sorcery_groups():
     return data["results"]
 
 
-def get_products(group_id):
+def get_products(group_id: int) -> dict:
     """
     Fetches all products (cards, sealed, decks) for a given set.
     Card attributes like rarity and cost are nested inside 'extendedData'
@@ -30,7 +30,7 @@ def get_products(group_id):
     return data["results"]
 
 
-def get_prices(group_id):
+def get_prices(group_id: int) -> dict:
     """
     Fetches current market prices for all products in a given set.
     TCGCSV updates prices daily at approximately 20:00 UTC.
