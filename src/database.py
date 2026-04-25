@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sqlite3
 from datetime import date
 from typing import TYPE_CHECKING
@@ -10,6 +11,10 @@ if TYPE_CHECKING:
 # Path to the SQLite database file. Defined once here so all functions
 # use the same location — change this in one place if the path moves.
 
+
+
+
+log = logging.getLogger(__name__)
 
 
 def create_tables(conn: sqlite3.Connection) -> None:
@@ -73,7 +78,7 @@ def save_cards(conn: sqlite3.Connection, card: dict) -> None:
     ext = {d["name"]: d["value"] for d in card["extendedData"]}
     is_foil = "(Foil)" in card["name"]
     foil_int = 1 if is_foil else 0
-    conn.execute(
+    result = conn.execute(
         """
         INSERT OR IGNORE INTO cards (
             product_id, group_id, category_id, name, clean_name,
@@ -106,11 +111,14 @@ def save_cards(conn: sqlite3.Connection, card: dict) -> None:
             foil_int,
         ),
     )
-
+    if result.rowcount == 1:
+        log.debug("Saved card: %s (product_id=%s)", card["name"], card["productId"])
+    else:
+        log.debug("Skipped card (already exists): %s (product_id=%s)", card["name"], card["productId"])
 
 def save_prices(conn: sqlite3.Connection, price: dict) -> None:
     today = str(date.today())
-    conn.execute(
+    result = conn.execute(
         """
         INSERT OR IGNORE INTO prices (
             product_id, sub_type_name, low_price, mid_price,
@@ -127,6 +135,10 @@ def save_prices(conn: sqlite3.Connection, price: dict) -> None:
             today,
         ),
     )
+    if result.rowcount == 1:
+        log.debug("Saved price: product_id=%s", price["productId"])
+    else:
+        log.debug("Skipped price (already exists for today=%s): product_id=%s", today, price["productId"])
 
 
 def save_deck(conn: sqlite3.Connection, deck: Deck) -> int | None:

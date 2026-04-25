@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from config import DB_PATH
 from context_manager import get_db_connection
@@ -6,6 +7,8 @@ from database import create_tables, get_cards, get_cards_by_ids, get_prices
 from models import Deck
 from sync import sync_cards, sync_prices
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
+log = logging.getLogger(__name__)
 
 def main():
     """

@@ -5,7 +5,7 @@ import requests
 # Category ID for Sorcery: Contested Realm on TCGPlayer/TCGCSV.
 # Stored as a constant — if it ever changes, update it in one place only.
 SORCERY_CATEGORY_ID = 77
-
+HEADERS = {"User-Agent": "SorceryCardTracker/1.0",}
 
 def get_sorcery_groups() -> dict:
     """
@@ -13,9 +13,9 @@ def get_sorcery_groups() -> dict:
     Returns a list of dicts with keys: groupId, name, abbreviation, publishedOn.
     """
     url = f"https://tcgcsv.com/tcgplayer/{SORCERY_CATEGORY_ID}/groups"
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)
     data = response.json()
-    return data["results"]
+    return data["results"] # type: ignore[no-any-return]
 
 
 def get_products(group_id: int) -> dict:
@@ -25,9 +25,9 @@ def get_products(group_id: int) -> dict:
     as key-value pairs — these get flattened when saved to the database.
     """
     url = f"https://tcgcsv.com/tcgplayer/{SORCERY_CATEGORY_ID}/{group_id}/products"
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)
     data = response.json()
-    return data["results"]
+    return data["results"] # type: ignore[no-any-return]
 
 
 def get_prices(group_id: int) -> dict:
@@ -36,9 +36,9 @@ def get_prices(group_id: int) -> dict:
     TCGCSV updates prices daily at approximately 20:00 UTC.
     """
     url = f"https://tcgcsv.com/tcgplayer/{SORCERY_CATEGORY_ID}/{group_id}/prices"
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)
     data = response.json()
-    return data["results"]
+    return data["results"] # type: ignore[no-any-return]
 
 
 # Only runs when this file is executed directly — used for manual testing.
