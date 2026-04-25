@@ -1,13 +1,21 @@
+from __future__ import annotations
+
+import sqlite3
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 
 from config import DB_PATH
 from context_manager import get_db_connection
 from database import get_cards_by_ids
 
+if TYPE_CHECKING:
+    from models import Deck
 
-def get_deck_card_data(deck, zone=None):
+
+def get_deck_card_data(deck: Deck, zone: str | None = None) -> list[tuple[sqlite3.Row, int]]:
     # get all product_ids from the deck
-    # could have used list comprehension: 
+    # could have used list comprehension:
     # valid_ids = [(pid, qty) for (pid, czone), qty in deck.cards.items() if zone is None or czone == zone]
     valid_ids = []
     for (product_id, card_zone), quantity in deck.cards.items():
@@ -27,7 +35,7 @@ def get_deck_card_data(deck, zone=None):
         return [(card_lookup[pid], qty) for pid, qty in valid_ids]
 
 
-def mana_curve(deck, zone="maindeck"):
+def mana_curve(deck: Deck, zone: str = "maindeck") -> None:
     deck_info = get_deck_card_data(deck, zone)
     cost_counts = {str(i): 0 for i in range(11)}
     for card, qty in deck_info:
@@ -38,10 +46,9 @@ def mana_curve(deck, zone="maindeck"):
     plt.ylabel("Quantity")
     plt.title("Mana Cost")
     plt.show()
-    return
 
 
-def element_distribution(deck, zone="maindeck"):
+def element_distribution(deck: Deck, zone: str = "maindeck") -> None:
     deck_info = get_deck_card_data(deck, zone)
     element_types = {"Fire": 0, "Water": 0, "Earth": 0, "Air": 0, "None": 0}
     for card, qty in deck_info:
@@ -56,7 +63,7 @@ def element_distribution(deck, zone="maindeck"):
     plt.show()
 
 
-def card_type_distribution(deck, zone=None):
+def card_type_distribution(deck: Deck, zone: str | None = None) -> None:
     deck_info = get_deck_card_data(deck, zone)
     card_types_counter = {"Artifact": 0, "Aura": 0, "Site": 0, "Magic": 0, "Avatar": 0, "Minion": 0, "None": 0}
     for card, qty in deck_info:
@@ -69,6 +76,3 @@ def card_type_distribution(deck, zone=None):
     data_show = {e: qty for e, qty in card_types_counter.items() if qty > 0}
     plt.pie(list(data_show.values()), labels=list(data_show.keys()))
     plt.show()
-
-
-
